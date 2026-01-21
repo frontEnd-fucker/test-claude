@@ -4,7 +4,7 @@ import { Task, TaskStatus, generateId, now } from '@/types'
 
 interface KanbanStore {
   tasks: Task[]
-  addTask: (title: string, description?: string, priority?: Task['priority']) => void
+  addTask: (title: string, description?: string, priority?: Task['priority'], status?: TaskStatus) => void
   updateTask: (id: string, updates: Partial<Task>) => void
   deleteTask: (id: string) => void
   moveTask: (id: string, status: TaskStatus) => void
@@ -59,7 +59,7 @@ export const useKanbanStore = create<KanbanStore>()(
         },
       ],
 
-      addTask: (title, description, priority) =>
+      addTask: (title, description, priority, status = 'todo') =>
         set((state) => ({
           tasks: [
             ...state.tasks,
@@ -67,7 +67,7 @@ export const useKanbanStore = create<KanbanStore>()(
               id: generateId(),
               title,
               description,
-              status: 'todo',
+              status,
               priority,
               createdAt: now(),
               updatedAt: now(),
@@ -120,26 +120,29 @@ export const useKanbanStore = create<KanbanStore>()(
         destinationIndex
       ) =>
         set((state) => {
+          // 1. 分离源列和目标列任务
           const sourceTasks = state.tasks.filter((task) => task.status === sourceStatus)
           const destinationTasks = state.tasks.filter((task) => task.status === destinationStatus)
+
+          // 2. 从源列移除任务
           const [movedTask] = sourceTasks.splice(sourceIndex, 1)
 
+          // 3. 更新任务状态和时间戳
           movedTask.status = destinationStatus
           movedTask.updatedAt = now()
 
+          // 4. 插入到目标列
           destinationTasks.splice(destinationIndex, 0, movedTask)
 
-          return {
-            tasks: state.tasks.map((task) => {
-              if (task.status === sourceStatus) {
-                return sourceTasks.shift()!
-              }
-              if (task.status === destinationStatus) {
-                return destinationTasks.shift()!
-              }
-              return task
-            }),
-          }
+          // 5. 收集其他列的任务（状态既不是源列也不是目标列）
+          const otherTasks = state.tasks.filter(
+            (task) => task.status !== sourceStatus && task.status !== destinationStatus
+          )
+
+          // 6. 重新构建完整任务数组（保持列内顺序）
+          const updatedTasks = [...otherTasks, ...sourceTasks, ...destinationTasks]
+
+          return { tasks: updatedTasks }
         }),
     }),
     {

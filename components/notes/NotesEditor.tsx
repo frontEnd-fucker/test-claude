@@ -18,6 +18,7 @@ export default function NotesEditor() {
     ? notes.find((note) => note.id === activeNoteId)
     : notes[0]
 
+  // eslint-disable-next-line react-compiler/react-compiler
   useLayoutEffect(() => {
     if (activeNote) {
       setContent(activeNote.content)
@@ -26,7 +27,6 @@ export default function NotesEditor() {
       setContent('')
       setIsEditing(true)
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeNote])
 
   const handleSave = () => {

@@ -17,7 +17,7 @@ export default function TodoItem({ todo }: TodoItemProps) {
   return (
     <div
       className={cn(
-        'group flex items-center gap-3 rounded-lg border border-transparent px-3 py-2 transition-colors hover:border-border hover:bg-muted/50',
+        'group flex items-center gap-3 rounded-lg border border-transparent px-3 py-2 transition-colors hover:border-border hover:bg-muted/50 cursor-pointer',
         todo.completed && 'opacity-60'
       )}
     >

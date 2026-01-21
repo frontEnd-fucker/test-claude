@@ -2,8 +2,7 @@
 
 import { useDroppable } from '@dnd-kit/core'
 import { TaskStatus } from '@/types'
-import { Plus } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import TaskForm from './TaskForm'
 
 interface ColumnProps {
   id: TaskStatus
@@ -15,6 +14,12 @@ interface ColumnProps {
 export default function Column({ id, title, taskCount, children }: ColumnProps) {
   const { setNodeRef, isOver } = useDroppable({
     id,
+    data: {
+      type: 'column',
+      status: id,
+      accepts: ['task'], // Explicitly declare acceptance of task type
+      isEmpty: taskCount === 0, // Indicate if column is empty for better visual feedback
+    },
   })
 
   const getColumnColor = () => {
@@ -43,8 +48,8 @@ export default function Column({ id, title, taskCount, children }: ColumnProps) 
     <div
       ref={setNodeRef}
       className={`rounded-xl border-2 ${getColumnColor()} p-4 transition-colors ${
-        isOver ? 'ring-2 ring-primary ring-offset-2 ring-offset-background' : ''
-      }`}
+        isOver ? 'ring-2 ring-primary ring-offset-2 ring-offset-background bg-primary/10' : ''
+      } ${taskCount === 0 && isOver ? 'border-dashed border-primary/50 bg-primary/5' : ''}`}
     >
       <div className="mb-4 flex items-center justify-between">
         <div className="flex items-center gap-2">
@@ -53,15 +58,21 @@ export default function Column({ id, title, taskCount, children }: ColumnProps) 
             {taskCount}
           </span>
         </div>
-        <Button variant="ghost" size="icon" className="h-8 w-8">
-          <Plus className="h-4 w-4" />
-        </Button>
+        <TaskForm
+          status={id}
+          buttonVariant="ghost"
+          buttonSize="icon"
+          showIcon={true}
+          buttonText=""
+        />
       </div>
       <div className="space-y-3">{children}</div>
       {taskCount === 0 && (
-        <div className="py-8 text-center">
-          <p className="text-sm text-muted-foreground">No tasks yet</p>
-          <p className="text-xs text-muted-foreground/70">Drop tasks here</p>
+        <div className="min-h-[120px] py-8 text-center flex items-center justify-center">
+          <div>
+            <p className="text-sm text-muted-foreground">No tasks yet</p>
+            <p className="text-xs text-muted-foreground/70">Drop tasks here</p>
+          </div>
         </div>
       )}
     </div>

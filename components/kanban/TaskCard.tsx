@@ -1,10 +1,12 @@
 'use client'
 
+import { useState } from 'react'
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { Task } from '@/types'
 import { GripVertical, MoreVertical, Clock, Flag } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import TaskForm from './TaskForm'
 import { cn } from '@/lib/utils'
 
 interface TaskCardProps {
@@ -13,6 +15,8 @@ interface TaskCardProps {
 }
 
 export default function TaskCard({ task, isOverlay = false }: TaskCardProps) {
+  const [editOpen, setEditOpen] = useState(false)
+
   const {
     attributes,
     listeners,
@@ -22,6 +26,11 @@ export default function TaskCard({ task, isOverlay = false }: TaskCardProps) {
     isDragging,
   } = useSortable({
     id: task.id,
+    data: {
+      type: 'task',
+      status: task.status,
+      priority: task.priority,
+    },
   })
 
   const style = {
@@ -60,7 +69,7 @@ export default function TaskCard({ task, isOverlay = false }: TaskCardProps) {
       ref={setNodeRef}
       style={style}
       className={cn(
-        'group relative rounded-lg border bg-card p-4 shadow-sm transition-all hover:shadow-md',
+        'group relative rounded-lg border bg-card p-4 shadow-sm transition-all hover:shadow-md cursor-pointer',
         isDragging && 'opacity-50',
         isOverlay && 'shadow-xl scale-105'
       )}
@@ -106,10 +115,18 @@ export default function TaskCard({ task, isOverlay = false }: TaskCardProps) {
           variant="ghost"
           size="icon"
           className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
+          onClick={() => setEditOpen(true)}
         >
           <MoreVertical className="h-4 w-4" />
         </Button>
       </div>
+      <TaskForm
+        task={task}
+        status={task.status}
+        open={editOpen}
+        onOpenChange={setEditOpen}
+        hideTrigger={true}
+      />
     </div>
   )
 }

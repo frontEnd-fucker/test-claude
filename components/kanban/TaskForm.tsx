@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useKanbanStore } from '@/lib/store'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -14,36 +14,90 @@ import {
 } from '@/components/ui/select'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { Plus } from 'lucide-react'
+import { Task, TaskStatus } from '@/types'
 
-export default function TaskForm() {
-  const [open, setOpen] = useState(false)
-  const [title, setTitle] = useState('')
-  const [description, setDescription] = useState('')
-  const [priority, setPriority] = useState<'low' | 'medium' | 'high'>('medium')
+interface TaskFormProps {
+  task?: Task
+  status?: TaskStatus
+  buttonText?: string
+  buttonVariant?: 'default' | 'outline' | 'secondary' | 'ghost' | 'link' | 'destructive'
+  buttonSize?: 'default' | 'sm' | 'lg' | 'icon'
+  showIcon?: boolean
+  onSubmit?: (taskData: { title: string; description?: string; priority?: 'low' | 'medium' | 'high'; status: TaskStatus }) => void
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
+  hideTrigger?: boolean
+}
+
+export default function TaskForm({
+  task,
+  status = 'todo',
+  buttonText = 'Add Task',
+  buttonVariant = 'default',
+  buttonSize = 'default',
+  showIcon = true,
+  onSubmit,
+  open: externalOpen,
+  onOpenChange: externalOnOpenChange,
+  hideTrigger = false,
+}: TaskFormProps) {
+  const [internalOpen, setInternalOpen] = useState(false)
+  const open = externalOpen !== undefined ? externalOpen : internalOpen
+  const setOpen = externalOnOpenChange || setInternalOpen
+  const [title, setTitle] = useState(task?.title || '')
+  const [description, setDescription] = useState(task?.description || '')
+  const [priority, setPriority] = useState<'low' | 'medium' | 'high'>(task?.priority || 'medium')
   const addTask = useKanbanStore((state) => state.addTask)
+  const updateTask = useKanbanStore((state) => state.updateTask)
+
+  // Sync form data when task changes
+  useEffect(() => {
+    if (task) {
+      setTitle(task.title)
+      setDescription(task.description || '')
+      setPriority(task.priority || 'medium')
+    }
+  }, [task])
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     if (!title.trim()) return
 
-    addTask(title, description, priority)
-    setTitle('')
-    setDescription('')
-    setPriority('medium')
+    if (onSubmit) {
+      onSubmit({ title, description, priority, status: task?.status || status })
+    } else if (task) {
+      // Edit mode
+      updateTask(task.id, { title, description, priority, status: task.status })
+    } else {
+      // Create mode
+      addTask(title, description, priority, status)
+    }
+
+    if (!task) {
+      // Only reset form for new tasks
+      setTitle('')
+      setDescription('')
+      setPriority('medium')
+    }
     setOpen(false)
   }
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button>
-          <Plus className="mr-2 h-4 w-4" />
-          Add Task
-        </Button>
-      </DialogTrigger>
+      {!hideTrigger && (
+        <DialogTrigger asChild>
+          <Button variant={buttonVariant} size={buttonSize}>
+            {showIcon && <Plus className={`h-4 w-4 ${buttonText ? 'mr-2' : ''}`} />}
+            {buttonText}
+          </Button>
+        </DialogTrigger>
+      )}
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Create New Task</DialogTitle>
+          <DialogTitle>
+            {task ? 'Edit Task' : 'Create New Task'}
+            ({task ? (task.status === 'in-progress' ? 'In Progress' : task.status.charAt(0).toUpperCase() + task.status.slice(1)) : (status === 'in-progress' ? 'In Progress' : status.charAt(0).toUpperCase() + status.slice(1))})
+          </DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
@@ -81,7 +135,7 @@ export default function TaskForm() {
             <Button type="button" variant="outline" onClick={() => setOpen(false)}>
               Cancel
             </Button>
-            <Button type="submit">Create Task</Button>
+            <Button type="submit">{task ? 'Update Task' : 'Create Task'}</Button>
           </div>
         </form>
       </DialogContent>
