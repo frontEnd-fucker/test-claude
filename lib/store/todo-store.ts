@@ -1,52 +1,21 @@
 import { create } from 'zustand'
-import { persist } from 'zustand/middleware'
-import { TodoItem, generateId, now } from '@/types'
 
+// UI state for todos (filtering, sorting, etc.)
 interface TodoStore {
-  todos: TodoItem[]
-  addTodo: (text: string) => void
-  toggleTodo: (id: string) => void
-  deleteTodo: (id: string) => void
-  clearCompleted: () => void
+  // Project filtering
+  selectedProjectId: string | null
+
+  // Actions
+  setSelectedProjectId: (projectId: string | null) => void
+  clearSelectedProject: () => void
 }
 
-export const useTodoStore = create<TodoStore>()(
-  persist(
-    (set) => ({
-      todos: [
-        { id: generateId(), text: 'Review PR #123', completed: false, createdAt: now() },
-        { id: generateId(), text: 'Update documentation', completed: true, createdAt: now() },
-        { id: generateId(), text: 'Plan next sprint', completed: false, createdAt: now() },
-        { id: generateId(), text: 'Fix mobile responsive bug', completed: false, createdAt: now() },
-      ],
+export const useTodoStore = create<TodoStore>((set) => ({
+  selectedProjectId: null,
 
-      addTodo: (text) =>
-        set((state) => ({
-          todos: [
-            ...state.todos,
-            { id: generateId(), text, completed: false, createdAt: now() },
-          ],
-        })),
+  setSelectedProjectId: (projectId) => set({ selectedProjectId: projectId }),
+  clearSelectedProject: () => set({ selectedProjectId: null }),
+}))
 
-      toggleTodo: (id) =>
-        set((state) => ({
-          todos: state.todos.map((todo) =>
-            todo.id === id ? { ...todo, completed: !todo.completed } : todo
-          ),
-        })),
-
-      deleteTodo: (id) =>
-        set((state) => ({
-          todos: state.todos.filter((todo) => todo.id !== id),
-        })),
-
-      clearCompleted: () =>
-        set((state) => ({
-          todos: state.todos.filter((todo) => !todo.completed),
-        })),
-    }),
-    {
-      name: 'todo-storage',
-    }
-  )
-)
+// Note: Real-time subscriptions are now handled by TanStack Query
+// via useTodoSubscriptions hook

@@ -111,6 +111,7 @@ export async function updateTask(
   if (updates.priority !== undefined) dbUpdates.priority = updates.priority
   if (updates.position !== undefined) dbUpdates.position = updates.position
   if (updates.dueDate !== undefined) dbUpdates.due_date = updates.dueDate?.toISOString()
+  if (updates.projectId !== undefined) dbUpdates.project_id = updates.projectId
 
   dbUpdates.updated_at = new Date().toISOString()
 

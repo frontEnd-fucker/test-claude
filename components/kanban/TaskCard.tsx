@@ -4,10 +4,26 @@ import { useState } from 'react'
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { Task } from '@/types'
-import { GripVertical, MoreVertical, Clock, Flag } from 'lucide-react'
+import { GripVertical, MoreVertical, Clock, Flag, Trash, Edit } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+} from '@/components/ui/dropdown-menu'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import TaskForm from './TaskForm'
 import { cn } from '@/lib/utils'
+import { useDeleteTask } from '@/lib/queries/tasks'
 
 interface TaskCardProps {
   task: Task
@@ -16,6 +32,8 @@ interface TaskCardProps {
 
 export default function TaskCard({ task, isOverlay = false }: TaskCardProps) {
   const [editOpen, setEditOpen] = useState(false)
+  const [deleteOpen, setDeleteOpen] = useState(false)
+  const deleteTaskMutation = useDeleteTask()
 
   const {
     attributes,
@@ -64,26 +82,33 @@ export default function TaskCard({ task, isOverlay = false }: TaskCardProps) {
     }
   }
 
+  const handleDelete = () => {
+    deleteTaskMutation.mutate(task.id)
+    setDeleteOpen(false)
+  }
+
   return (
     <div
       ref={setNodeRef}
       style={style}
       className={cn(
-        'group relative rounded-lg border bg-card p-4 shadow-sm transition-all hover:shadow-md cursor-pointer',
+        'group relative rounded-lg border bg-card p-4 shadow-sm transition-all hover:shadow-md pt-10',
         isDragging && 'opacity-50',
         isOverlay && 'shadow-xl scale-105'
       )}
     >
+      {/* Drag handle area - horizontal bar on top */}
+      <div
+        className="absolute left-0 top-0 right-0 h-8 flex items-center justify-center touch-none cursor-grab active:cursor-grabbing z-10 hover:bg-muted/20 transition-colors rounded-t-lg"
+        {...attributes}
+        {...listeners}
+      >
+        <div className="w-32 h-2 rounded-full bg-muted-foreground/40" />
+      </div>
+
       <div className="flex items-start justify-between">
         <div className="flex-1">
           <div className="flex items-center gap-2">
-            <button
-              className="touch-none cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground"
-              {...attributes}
-              {...listeners}
-            >
-              <GripVertical className="h-4 w-4" />
-            </button>
             <h4 className="font-medium">{task.title}</h4>
           </div>
           {task.description && (
@@ -111,14 +136,31 @@ export default function TaskCard({ task, isOverlay = false }: TaskCardProps) {
             </span>
           </div>
         </div>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
-          onClick={() => setEditOpen(true)}
-        >
-          <MoreVertical className="h-4 w-4" />
-        </Button>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
+            >
+              <MoreVertical className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={() => setEditOpen(true)}>
+              <Edit className="mr-2 h-4 w-4" />
+              Edit
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              onClick={() => setDeleteOpen(true)}
+              className="text-red-600 focus:text-red-600 focus:bg-red-50"
+            >
+              <Trash className="mr-2 h-4 w-4" />
+              Delete
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
       <TaskForm
         task={task}
@@ -127,6 +169,28 @@ export default function TaskCard({ task, isOverlay = false }: TaskCardProps) {
         onOpenChange={setEditOpen}
         hideTrigger={true}
       />
+      <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Task</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete "<strong>{task.title}</strong>"? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleDelete}
+              disabled={deleteTaskMutation.isPending}
+            >
+              {deleteTaskMutation.isPending ? 'Deleting...' : 'Delete'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

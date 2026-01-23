@@ -1,7 +1,8 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useKanbanStore } from '@/lib/store'
+import { useCreateTask, useUpdateTask } from '@/lib/queries/tasks'
+import { useProjects } from '@/lib/queries/projects'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -23,7 +24,7 @@ interface TaskFormProps {
   buttonVariant?: 'default' | 'outline' | 'secondary' | 'ghost' | 'link' | 'destructive'
   buttonSize?: 'default' | 'sm' | 'lg' | 'icon'
   showIcon?: boolean
-  onSubmit?: (taskData: { title: string; description?: string; priority?: 'low' | 'medium' | 'high'; status: TaskStatus }) => void
+  onSubmit?: (taskData: { title: string; description?: string; priority?: 'low' | 'medium' | 'high'; status: TaskStatus; projectId?: string }) => void
   open?: boolean
   onOpenChange?: (open: boolean) => void
   hideTrigger?: boolean
@@ -47,8 +48,10 @@ export default function TaskForm({
   const [title, setTitle] = useState(task?.title || '')
   const [description, setDescription] = useState(task?.description || '')
   const [priority, setPriority] = useState<'low' | 'medium' | 'high'>(task?.priority || 'medium')
-  const addTask = useKanbanStore((state) => state.addTask)
-  const updateTask = useKanbanStore((state) => state.updateTask)
+  const [projectId, setProjectId] = useState<string | undefined>(task?.projectId || undefined)
+  const createTaskMutation = useCreateTask()
+  const updateTaskMutation = useUpdateTask()
+  const { data: projects = [] } = useProjects()
 
   // Sync form data when task changes
   useEffect(() => {
@@ -56,6 +59,7 @@ export default function TaskForm({
       setTitle(task.title)
       setDescription(task.description || '')
       setPriority(task.priority || 'medium')
+      setProjectId(task.projectId || undefined)
     }
   }, [task])
 
@@ -64,13 +68,22 @@ export default function TaskForm({
     if (!title.trim()) return
 
     if (onSubmit) {
-      onSubmit({ title, description, priority, status: task?.status || status })
+      onSubmit({ title, description, priority, status: task?.status || status, projectId })
     } else if (task) {
       // Edit mode
-      updateTask(task.id, { title, description, priority, status: task.status })
+      updateTaskMutation.mutate({
+        id: task.id,
+        updates: { title, description, priority, status: task.status, projectId },
+      })
     } else {
       // Create mode
-      addTask(title, description, priority, status)
+      createTaskMutation.mutate({
+        title,
+        description,
+        priority,
+        status,
+        projectId,
+      })
     }
 
     if (!task) {
@@ -78,6 +91,7 @@ export default function TaskForm({
       setTitle('')
       setDescription('')
       setPriority('medium')
+      setProjectId(undefined)
     }
     setOpen(false)
   }
@@ -128,6 +142,22 @@ export default function TaskForm({
                 <SelectItem value="low">Low</SelectItem>
                 <SelectItem value="medium">Medium</SelectItem>
                 <SelectItem value="high">High</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <label className="text-sm font-medium">Project (optional)</label>
+            <Select value={projectId || 'none'} onValueChange={(value) => setProjectId(value === 'none' ? undefined : value)}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select project" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">No project</SelectItem>
+                {projects.map((project) => (
+                  <SelectItem key={project.id} value={project.id}>
+                    {project.name}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>

@@ -1,7 +1,7 @@
 'use client'
 
 import { TodoItem as TodoItemType } from '@/types'
-import { useTodoStore } from '@/lib/store'
+import { useToggleTodo, useDeleteTodo } from '@/lib/queries/todos'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Button } from '@/components/ui/button'
 import { Trash2 } from 'lucide-react'
@@ -12,7 +12,8 @@ interface TodoItemProps {
 }
 
 export default function TodoItem({ todo }: TodoItemProps) {
-  const { toggleTodo, deleteTodo } = useTodoStore()
+  const toggleTodoMutation = useToggleTodo()
+  const deleteTodoMutation = useDeleteTodo()
 
   return (
     <div
@@ -23,7 +24,7 @@ export default function TodoItem({ todo }: TodoItemProps) {
     >
       <Checkbox
         checked={todo.completed}
-        onCheckedChange={() => toggleTodo(todo.id)}
+        onCheckedChange={() => toggleTodoMutation.mutate(todo.id)}
         className="data-[state=checked]:border-primary data-[state=checked]:bg-primary"
       />
       <div className="flex-1 min-w-0">
@@ -46,7 +47,7 @@ export default function TodoItem({ todo }: TodoItemProps) {
         variant="ghost"
         size="icon"
         className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity"
-        onClick={() => deleteTodo(todo.id)}
+        onClick={() => deleteTodoMutation.mutate(todo.id)}
       >
         <Trash2 className="h-3.5 w-3.5" />
       </Button>

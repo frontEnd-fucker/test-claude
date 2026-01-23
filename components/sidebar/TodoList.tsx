@@ -1,21 +1,63 @@
 'use client'
 
 import { useState } from 'react'
-import { useTodoStore } from '@/lib/store'
+import { useTodos, useCreateTodo, useClearCompletedTodos, useTodoSubscriptions } from '@/lib/queries/todos'
 import TodoItem from './TodoItem'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Plus, Trash2 } from 'lucide-react'
+import { Plus, Trash2, Loader2, AlertCircle } from 'lucide-react'
 
 export default function TodoList() {
-  const { todos, addTodo, clearCompleted } = useTodoStore()
   const [newTodo, setNewTodo] = useState('')
+
+  // Set up real-time subscriptions
+  useTodoSubscriptions()
+
+  // Fetch todos using TanStack Query
+  const { data: todos = [], isLoading, error, refetch } = useTodos()
+
+  // Mutation hooks
+  const createTodoMutation = useCreateTodo()
+  const clearCompletedMutation = useClearCompletedTodos()
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     if (!newTodo.trim()) return
-    addTodo(newTodo)
+    createTodoMutation.mutate({ text: newTodo })
     setNewTodo('')
+  }
+
+  const handleClearCompleted = () => {
+    clearCompletedMutation.mutate()
+  }
+
+  if (isLoading && todos.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center py-8 space-y-2">
+        <Loader2 className="h-6 w-6 animate-spin text-primary" />
+        <p className="text-sm text-muted-foreground">Loading tasks...</p>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-3">
+        <div className="flex items-center gap-2 text-destructive">
+          <AlertCircle className="h-4 w-4" />
+          <h3 className="text-sm font-semibold">Error loading tasks</h3>
+        </div>
+        <p className="mt-1 text-xs">{error.message}</p>
+        <Button
+          variant="outline"
+          size="sm"
+          className="mt-3"
+          onClick={() => refetch()}
+        >
+          Retry
+        </Button>
+      </div>
+    )
   }
 
   const incompleteTodos = todos.filter((todo) => !todo.completed)
@@ -55,7 +97,7 @@ export default function TodoList() {
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={clearCompleted}
+                      onClick={handleClearCompleted}
                       className="h-7 text-xs"
                     >
                       <Trash2 className="mr-1 h-3 w-3" />

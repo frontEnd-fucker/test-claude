@@ -2,17 +2,26 @@
 
 import { useState, useLayoutEffect } from 'react'
 import { useNotesStore } from '@/lib/store'
+import { useNotes, useCreateNote, useUpdateNote, useDeleteNote, useNoteSubscriptions } from '@/lib/queries/notes'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Card } from '@/components/ui/card'
-import { Save, Trash2, Plus, FileText } from 'lucide-react'
+import { Save, Trash2, Plus, FileText, Loader2, AlertCircle } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 export default function NotesEditor() {
-  const { notes, activeNoteId, addNote, updateNote, deleteNote, setActiveNote } =
-    useNotesStore()
+  const { activeNoteId, setActiveNote } = useNotesStore()
   const [content, setContent] = useState('')
   const [isEditing, setIsEditing] = useState(false)
+
+  // Set up real-time subscriptions
+  useNoteSubscriptions()
+
+  // Fetch notes using TanStack Query
+  const { data: notes = [], isLoading, error, refetch } = useNotes()
+  const createNoteMutation = useCreateNote()
+  const updateNoteMutation = useUpdateNote()
+  const deleteNoteMutation = useDeleteNote()
 
   const activeNote = activeNoteId
     ? notes.find((note) => note.id === activeNoteId)
@@ -33,9 +42,13 @@ export default function NotesEditor() {
     if (!content.trim()) return
 
     if (activeNote) {
-      updateNote(activeNote.id, content)
+      // Update existing note - keep existing title
+      updateNoteMutation.mutate({ id: activeNote.id, updates: { content } })
     } else {
-      addNote(content)
+      // Create new note - generate title from first line
+      const firstLine = content.split('\n')[0].trim()
+      const title = firstLine.length > 0 ? firstLine.substring(0, 50) : 'Untitled Note'
+      createNoteMutation.mutate({ title, content })
     }
     setIsEditing(false)
   }
@@ -48,8 +61,37 @@ export default function NotesEditor() {
 
   const handleDelete = () => {
     if (activeNote) {
-      deleteNote(activeNote.id)
+      deleteNoteMutation.mutate(activeNote.id)
     }
+  }
+
+  if (isLoading && notes.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center py-8 space-y-2">
+        <Loader2 className="h-6 w-6 animate-spin text-primary" />
+        <p className="text-sm text-muted-foreground">Loading notes...</p>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-3">
+        <div className="flex items-center gap-2 text-destructive">
+          <AlertCircle className="h-4 w-4" />
+          <h3 className="text-sm font-semibold">Error loading notes</h3>
+        </div>
+        <p className="mt-1 text-xs">{error.message}</p>
+        <Button
+          variant="outline"
+          size="sm"
+          className="mt-3"
+          onClick={() => refetch()}
+        >
+          Retry
+        </Button>
+      </div>
+    )
   }
 
   return (

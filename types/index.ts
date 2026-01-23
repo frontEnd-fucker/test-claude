@@ -1,28 +1,6 @@
-export type TaskStatus = 'todo' | 'in-progress' | 'complete'
-
-export interface Task {
-  id: string
-  title: string
-  description?: string
-  status: TaskStatus
-  createdAt: Date
-  updatedAt: Date
-  priority?: 'low' | 'medium' | 'high'
-}
-
-export interface TodoItem {
-  id: string
-  text: string
-  completed: boolean
-  createdAt: Date
-}
-
-export interface Note {
-  id: string
-  content: string
-  createdAt: Date
-  updatedAt: Date
-}
+// Re-export database types for backward compatibility
+export type { TaskStatus, PriorityLevel } from './database'
+export type { Task, TodoItem, Note, Project, InsertProject, UpdateProject } from './database'
 
 // Helper functions
 export function generateId(): string {
