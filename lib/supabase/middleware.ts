@@ -28,7 +28,12 @@ export async function updateSession(request: NextRequest) {
   )
 
   // refreshing the auth token
-  await supabase.auth.getUser()
+  const { data: { user }, error } = await supabase.auth.getUser()
+
+  if (error) {
+    // 可以选择清除无效的认证cookie
+    console.error('Auth session refresh failed:', error.message, 'Path:', request.nextUrl.pathname)
+  }
 
   return supabaseResponse
 }

@@ -12,9 +12,8 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, session) => {
-      if (session?.access_token !== localStorage.getItem('supabase.auth.token')) {
-        router.refresh()
-      }
+      // 当认证状态变化时刷新页面以同步服务器状态
+      router.refresh()
     })
 
     return () => {
