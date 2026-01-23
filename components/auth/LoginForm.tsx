@@ -56,7 +56,7 @@ export function LoginForm() {
   }
 
   return (
-    <Card className="w-full max-w-md">
+    <Card className="w-full max-w-md gap-4">
       <CardHeader>
         <CardTitle className="text-2xl">Sign In</CardTitle>
         <CardDescription>
@@ -64,7 +64,7 @@ export function LoginForm() {
         </CardDescription>
       </CardHeader>
       <form onSubmit={handleSubmit}>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-3">
           {error && (
             <div className="rounded-md bg-destructive/15 p-3 text-sm text-destructive">
               {error}
@@ -95,7 +95,7 @@ export function LoginForm() {
             />
           </div>
         </CardContent>
-        <CardFooter className="flex flex-col space-y-4">
+        <CardFooter className="flex flex-col space-y-3 pt-4">
           <Button type="submit" className="w-full" disabled={loading}>
             {loading ? 'Signing in...' : 'Sign In'}
           </Button>
