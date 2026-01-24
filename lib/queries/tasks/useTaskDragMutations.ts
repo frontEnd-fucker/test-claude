@@ -1,4 +1,7 @@
+'use client'
+
 import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useParams } from 'next/navigation'
 import { taskKeys } from './query-keys'
 import { reorderTasks, moveTaskBetweenColumns } from './api'
 import { Task, TaskStatus } from '@/types/database'
@@ -9,6 +12,8 @@ let optimisticVersion = 0
 
 export function useReorderTasks() {
   const queryClient = useQueryClient()
+  const params = useParams()
+  const routeProjectId = params.id as string | undefined
 
   return useMutation({
     mutationFn: (params: {
@@ -16,8 +21,9 @@ export function useReorderTasks() {
       startIndex: number
       endIndex: number
       projectId?: string
-    }) => reorderTasks(params.status, params.startIndex, params.endIndex, params.projectId),
-    onMutate: async ({ status, startIndex, endIndex, projectId }) => {
+    }) => reorderTasks(params.status, params.startIndex, params.endIndex, params.projectId ?? routeProjectId),
+    onMutate: async ({ status, startIndex, endIndex, projectId: paramProjectId }) => {
+      const projectId = paramProjectId ?? routeProjectId
       // Cancel any outgoing refetches
       await queryClient.cancelQueries({ queryKey: taskKeys.list({ projectId }) })
 
@@ -79,7 +85,7 @@ export function useReorderTasks() {
     onSettled: (data, error, variables, context) => {
       // Only refetch for the latest optimistic update
       if (context?.version === optimisticVersion) {
-        queryClient.invalidateQueries({ queryKey: taskKeys.list({ projectId: variables.projectId }) })
+        queryClient.invalidateQueries({ queryKey: taskKeys.list({ projectId: variables.projectId ?? routeProjectId }) })
       }
     },
   })
@@ -87,6 +93,8 @@ export function useReorderTasks() {
 
 export function useMoveTaskBetweenColumns() {
   const queryClient = useQueryClient()
+  const params = useParams()
+  const routeProjectId = params.id as string | undefined
 
   return useMutation({
     mutationFn: (params: {
@@ -100,15 +108,16 @@ export function useMoveTaskBetweenColumns() {
       params.destinationStatus,
       params.sourceIndex,
       params.destinationIndex,
-      params.projectId
+      params.projectId ?? routeProjectId
     ),
     onMutate: async ({
       sourceStatus,
       destinationStatus,
       sourceIndex,
       destinationIndex,
-      projectId,
+      projectId: paramProjectId,
     }) => {
+      const projectId = paramProjectId ?? routeProjectId
       // Cancel any outgoing refetches
       await queryClient.cancelQueries({ queryKey: taskKeys.list({ projectId }) })
 
@@ -183,7 +192,7 @@ export function useMoveTaskBetweenColumns() {
     onSettled: (data, error, variables, context) => {
       // Only refetch for the latest optimistic update
       if (context?.version === optimisticVersion) {
-        queryClient.invalidateQueries({ queryKey: taskKeys.list({ projectId: variables.projectId }) })
+        queryClient.invalidateQueries({ queryKey: taskKeys.list({ projectId: variables.projectId ?? routeProjectId }) })
       }
     },
   })

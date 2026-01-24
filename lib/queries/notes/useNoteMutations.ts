@@ -1,10 +1,15 @@
+'use client'
+
 import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useParams } from 'next/navigation'
 import { noteKeys } from './query-keys'
 import { createNote, updateNote, deleteNote } from './api'
 import { Note } from '@/types/database'
 
 export function useCreateNote() {
   const queryClient = useQueryClient()
+  const params = useParams()
+  const routeProjectId = params.id as string | undefined
 
   return useMutation({
     mutationFn: (params: {
@@ -12,14 +17,15 @@ export function useCreateNote() {
       content: string
       tags?: string[]
       projectId?: string
-    }) => createNote(params.title, params.content, params.tags, params.projectId),
+    }) => createNote(params.title, params.content, params.tags, params.projectId ?? routeProjectId),
     onMutate: async (params) => {
+      const projectId = params.projectId ?? routeProjectId
       // Cancel any outgoing refetches
-      await queryClient.cancelQueries({ queryKey: noteKeys.list({ projectId: params.projectId }) })
+      await queryClient.cancelQueries({ queryKey: noteKeys.list({ projectId }) })
 
       // Snapshot the previous value
       const previousNotes = queryClient.getQueriesData<Note[]>({
-        queryKey: noteKeys.list({ projectId: params.projectId }),
+        queryKey: noteKeys.list({ projectId }),
       })
 
       // Optimistically create a new note
@@ -30,7 +36,7 @@ export function useCreateNote() {
         tags: params.tags || [],
         isArchived: false,
         userId: 'temp-user',
-        projectId: params.projectId,
+        projectId,
         createdAt: new Date(),
         updatedAt: new Date(),
       }
@@ -40,7 +46,7 @@ export function useCreateNote() {
         queryClient.setQueryData(queryKey, [optimisticNote, ...notes])
       })
 
-      return { previousNotes }
+      return { previousNotes, projectId }
     },
     onError: (err, variables, context) => {
       // Rollback on error
@@ -51,8 +57,9 @@ export function useCreateNote() {
       }
     },
     onSettled: (data, error, variables) => {
+      const projectId = variables.projectId ?? routeProjectId
       // Always refetch after error or success
-      queryClient.invalidateQueries({ queryKey: noteKeys.list({ projectId: variables.projectId }) })
+      queryClient.invalidateQueries({ queryKey: noteKeys.list({ projectId }) })
     },
   })
 }
@@ -100,6 +107,8 @@ export function useUpdateNote() {
 
 export function useDeleteNote() {
   const queryClient = useQueryClient()
+  const params = useParams()
+  const routeProjectId = params.id as string | undefined
 
   return useMutation({
     mutationFn: (id: string) => deleteNote(id),
@@ -130,7 +139,7 @@ export function useDeleteNote() {
     },
     onSettled: (data, error, variables) => {
       // Always refetch after error or success
-      queryClient.invalidateQueries({ queryKey: noteKeys.list({ projectId: variables.projectId }) })
+      queryClient.invalidateQueries({ queryKey: noteKeys.list({ projectId: routeProjectId }) })
     },
   })
 }

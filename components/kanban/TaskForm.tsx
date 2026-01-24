@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react'
 import { useCreateTask, useUpdateTask } from '@/lib/queries/tasks'
-import { useProjects } from '@/lib/queries/projects'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -24,7 +23,7 @@ interface TaskFormProps {
   buttonVariant?: 'default' | 'outline' | 'secondary' | 'ghost' | 'link' | 'destructive'
   buttonSize?: 'default' | 'sm' | 'lg' | 'icon'
   showIcon?: boolean
-  onSubmit?: (taskData: { title: string; description?: string; priority?: 'low' | 'medium' | 'high'; status: TaskStatus; projectId?: string }) => void
+  onSubmit?: (taskData: { title: string; description?: string; priority?: 'low' | 'medium' | 'high'; status: TaskStatus }) => void
   open?: boolean
   onOpenChange?: (open: boolean) => void
   hideTrigger?: boolean
@@ -48,10 +47,8 @@ export default function TaskForm({
   const [title, setTitle] = useState(task?.title || '')
   const [description, setDescription] = useState(task?.description || '')
   const [priority, setPriority] = useState<'low' | 'medium' | 'high'>(task?.priority || 'medium')
-  const [projectId, setProjectId] = useState<string | undefined>(task?.projectId || undefined)
   const createTaskMutation = useCreateTask()
   const updateTaskMutation = useUpdateTask()
-  const { data: projects = [] } = useProjects()
 
   // Sync form data when task changes
   useEffect(() => {
@@ -59,7 +56,6 @@ export default function TaskForm({
       setTitle(task.title)
       setDescription(task.description || '')
       setPriority(task.priority || 'medium')
-      setProjectId(task.projectId || undefined)
     }
   }, [task])
 
@@ -68,12 +64,12 @@ export default function TaskForm({
     if (!title.trim()) return
 
     if (onSubmit) {
-      onSubmit({ title, description, priority, status: task?.status || status, projectId })
+      onSubmit({ title, description, priority, status: task?.status || status })
     } else if (task) {
       // Edit mode
       updateTaskMutation.mutate({
         id: task.id,
-        updates: { title, description, priority, status: task.status, projectId },
+        updates: { title, description, priority, status: task.status },
       })
     } else {
       // Create mode
@@ -82,7 +78,6 @@ export default function TaskForm({
         description,
         priority,
         status,
-        projectId,
       })
     }
 
@@ -91,7 +86,6 @@ export default function TaskForm({
       setTitle('')
       setDescription('')
       setPriority('medium')
-      setProjectId(undefined)
     }
     setOpen(false)
   }
@@ -142,22 +136,6 @@ export default function TaskForm({
                 <SelectItem value="low">Low</SelectItem>
                 <SelectItem value="medium">Medium</SelectItem>
                 <SelectItem value="high">High</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div>
-            <label className="text-sm font-medium">Project (optional)</label>
-            <Select value={projectId || 'none'} onValueChange={(value) => setProjectId(value === 'none' ? undefined : value)}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select project" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">No project</SelectItem>
-                {projects.map((project) => (
-                  <SelectItem key={project.id} value={project.id}>
-                    {project.name}
-                  </SelectItem>
-                ))}
               </SelectContent>
             </Select>
           </div>

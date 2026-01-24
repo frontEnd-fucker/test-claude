@@ -27,7 +27,6 @@ import {
 import { TaskStatus } from "@/types";
 import { Loader2, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useParams } from "next/navigation";
 
 const columns: { id: TaskStatus; title: string }[] = [
   { id: "todo", title: "Todo" },
@@ -38,7 +37,6 @@ const columns: { id: TaskStatus; title: string }[] = [
 export default function Board() {
   const [activeId, setActiveId] = useState<string | null>(null);
   const [overColumn, setOverColumn] = useState<string | null>(null);
-  const { id: projectId } = useParams<{ id: string }>();
 
   // Set up real-time subscriptions
   useTaskSubscriptions();
@@ -49,7 +47,7 @@ export default function Board() {
     isLoading,
     error,
     refetch,
-  } = useTasks({ projectId });
+  } = useTasks();
   const reorderTasksMutation = useReorderTasks();
   const moveTaskBetweenColumnsMutation = useMoveTaskBetweenColumns();
 
@@ -138,7 +136,6 @@ export default function Board() {
           destinationStatus: newStatus,
           sourceIndex,
           destinationIndex: destIndex,
-          projectId,
         });
       }
       return;
@@ -161,7 +158,6 @@ export default function Board() {
           status: activeTask.status,
           startIndex: oldIndex,
           endIndex: newIndex,
-          projectId,
         });
       }
     } else {
@@ -178,7 +174,6 @@ export default function Board() {
         destinationStatus: overTask.status,
         sourceIndex,
         destinationIndex: destIndex,
-        projectId,
       });
     }
   };

@@ -1,10 +1,15 @@
+'use client'
+
 import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useParams } from 'next/navigation'
 import { taskKeys } from './query-keys'
 import { createTask, updateTask, deleteTask } from './api'
 import { Task, TaskStatus, PriorityLevel } from '@/types/database'
 
 export function useCreateTask() {
   const queryClient = useQueryClient()
+  const params = useParams()
+  const routeProjectId = params.id as string | undefined
 
   return useMutation({
     mutationFn: (params: {
@@ -18,7 +23,7 @@ export function useCreateTask() {
       params.description,
       params.priority,
       params.status,
-      params.projectId
+      params.projectId ?? routeProjectId
     ),
     onMutate: async (params) => {
       // Cancel any outgoing refetches
@@ -38,7 +43,7 @@ export function useCreateTask() {
         priority: params.priority as PriorityLevel,
         position: 1, // Will be adjusted by server
         userId: 'temp-user',
-        projectId: params.projectId || '',
+        projectId: params.projectId ?? routeProjectId ?? '',
         createdAt: new Date(),
         updatedAt: new Date(),
       }

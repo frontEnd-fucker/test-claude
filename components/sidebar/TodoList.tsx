@@ -1,7 +1,6 @@
 'use client'
 
 import { useState } from 'react'
-import { useParams } from 'next/navigation'
 import { useTodos, useCreateTodo, useClearCompletedTodos, useTodoSubscriptions } from '@/lib/queries/todos'
 import TodoItem from './TodoItem'
 import { Button } from '@/components/ui/button'
@@ -10,13 +9,12 @@ import { Plus, Trash2, Loader2, AlertCircle } from 'lucide-react'
 
 export default function TodoList() {
   const [newTodo, setNewTodo] = useState('')
-  const { id: projectId } = useParams<{ id: string }>()
 
   // Set up real-time subscriptions
   useTodoSubscriptions()
 
   // Fetch todos using TanStack Query
-  const { data: todos = [], isLoading, error, refetch } = useTodos({ projectId })
+  const { data: todos = [], isLoading, error, refetch } = useTodos()
 
   // Mutation hooks
   const createTodoMutation = useCreateTodo()
@@ -25,7 +23,7 @@ export default function TodoList() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     if (!newTodo.trim()) return
-    createTodoMutation.mutate({ text: newTodo, projectId })
+    createTodoMutation.mutate({ text: newTodo })
     setNewTodo('')
   }
 

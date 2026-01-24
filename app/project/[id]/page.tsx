@@ -2,7 +2,6 @@
 
 import { useParams, notFound } from 'next/navigation'
 import Link from 'next/link'
-import { useEffect } from 'react'
 import { ChevronRight, Loader2 } from 'lucide-react'
 
 import { useProject, useProjectStats } from '@/lib/queries/projects'
@@ -10,9 +9,6 @@ import KanbanBoard from '@/components/kanban/Board'
 import TodoList from '@/components/sidebar/TodoList'
 import NotesEditor from '@/components/notes/NotesEditor'
 import { AuthGuard } from '@/components/auth/AuthGuard'
-import { useKanbanStore } from '@/lib/store/kanban-store'
-import { useTodoStore } from '@/lib/store/todo-store'
-import { useNotesStore } from '@/lib/store/notes-store'
 
 export default function ProjectDetailPage() {
   const params = useParams()
@@ -21,23 +17,6 @@ export default function ProjectDetailPage() {
   const { data: project, isLoading, error } = useProject(projectId)
   const { data: stats, isLoading: statsLoading } = useProjectStats(projectId)
 
-  // Sync project ID to all stores
-  const setKanbanProject = useKanbanStore(state => state.setSelectedProjectId)
-  const setTodoProject = useTodoStore(state => state.setSelectedProjectId)
-  const setNotesProject = useNotesStore(state => state.setSelectedProjectId)
-
-  useEffect(() => {
-    if (projectId) {
-      setKanbanProject(projectId)
-      setTodoProject(projectId)
-      setNotesProject(projectId)
-    }
-    return () => {
-      setKanbanProject(null)
-      setTodoProject(null)
-      setNotesProject(null)
-    }
-  }, [projectId, setKanbanProject, setTodoProject, setNotesProject])
 
   if (isLoading) {
     return (

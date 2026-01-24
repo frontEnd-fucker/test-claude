@@ -1,15 +1,21 @@
+'use client'
+
 import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useParams } from 'next/navigation'
 import { todoKeys } from './query-keys'
 import { createTodo, toggleTodo, deleteTodo, clearCompletedTodos } from './api'
 import { TodoItem } from '@/types/database'
 
 export function useCreateTodo() {
   const queryClient = useQueryClient()
+  const params = useParams()
+  const routeProjectId = params.id as string | undefined
 
   return useMutation({
     mutationFn: ({ text, projectId }: { text: string; projectId?: string }) =>
-      createTodo(text, projectId),
-    onMutate: async ({ text, projectId }) => {
+      createTodo(text, projectId ?? routeProjectId),
+    onMutate: async ({ text, projectId: paramProjectId }) => {
+      const projectId = paramProjectId ?? routeProjectId
       // Cancel any outgoing refetches
       await queryClient.cancelQueries({ queryKey: todoKeys.list({ projectId }) })
 
