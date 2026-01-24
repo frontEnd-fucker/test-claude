@@ -27,6 +27,7 @@ import {
 import { TaskStatus } from "@/types";
 import { Loader2, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { BoardSkeleton } from "@/components/ui/skeleton/index";
 
 const columns: { id: TaskStatus; title: string }[] = [
   { id: "todo", title: "Todo" },
@@ -181,12 +182,7 @@ export default function Board() {
   const activeTask = tasks.find((task) => task.id === activeId);
 
   if (isLoading && tasks.length === 0) {
-    return (
-      <div className="flex flex-col items-center justify-center py-12 space-y-4">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        <p className="text-muted-foreground">Loading tasks...</p>
-      </div>
-    );
+    return <BoardSkeleton />;
   }
 
   if (error) {

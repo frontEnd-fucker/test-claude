@@ -6,6 +6,7 @@ import TodoItem from './TodoItem'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Plus, Trash2, Loader2, AlertCircle } from 'lucide-react'
+import { ListSkeleton } from '@/components/ui/skeleton/index'
 
 export default function TodoList() {
   const [newTodo, setNewTodo] = useState('')
@@ -32,12 +33,7 @@ export default function TodoList() {
   }
 
   if (isLoading && todos.length === 0) {
-    return (
-      <div className="flex flex-col items-center justify-center py-8 space-y-2">
-        <Loader2 className="h-6 w-6 animate-spin text-primary" />
-        <p className="text-sm text-muted-foreground">Loading tasks...</p>
-      </div>
-    )
+    return <ListSkeleton showHeader={false} showInput={true} itemCount={3} showActions={true} />;
   }
 
   if (error) {

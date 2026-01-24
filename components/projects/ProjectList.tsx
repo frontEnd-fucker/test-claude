@@ -5,6 +5,7 @@ import { Loader2, AlertCircle, FolderPlus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import ProjectCard from './ProjectCard'
 import ProjectForm from './ProjectForm'
+import { CardSkeleton } from '@/components/ui/skeleton/index'
 
 export default function ProjectList() {
   // Set up real-time subscriptions for projects
@@ -13,12 +14,23 @@ export default function ProjectList() {
   // Fetch projects using TanStack Query
   const { data: projects = [], isLoading, error, refetch } = useProjects()
 
-  if (isLoading) {
+  if (isLoading && projects.length === 0) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="text-center">
-          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
-          <p className="text-muted-foreground">Loading projects...</p>
+      <div className="space-y-6">
+        {/* 头部骨架图 */}
+        <div className="flex items-center justify-between">
+          <div className="space-y-2">
+            <div className="h-9 w-48 animate-pulse rounded-md bg-muted" />
+            <div className="h-5 w-80 animate-pulse rounded-md bg-muted" />
+          </div>
+          <div className="h-10 w-32 animate-pulse rounded-md bg-muted" />
+        </div>
+
+        {/* 项目卡片骨架图网格 */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <CardSkeleton key={i} />
+          ))}
         </div>
       </div>
     )
