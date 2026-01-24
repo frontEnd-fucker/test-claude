@@ -8,7 +8,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Card } from '@/components/ui/card'
 import { Save, Trash2, Plus, FileText, Loader2, AlertCircle } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { Skeleton } from '@/components/ui/skeleton/index'
+import { Skeleton, MinimalSkeleton } from '@/components/ui/skeleton/index'
 
 export default function NotesEditor() {
   const { activeNoteId, setActiveNote } = useNotesStore()
@@ -67,49 +67,7 @@ export default function NotesEditor() {
   }
 
   if (isLoading && notes.length === 0) {
-    return (
-      <div className="space-y-4">
-        {/* 头部骨架图 */}
-        <div className="flex items-center justify-between">
-          <Skeleton className="h-5 w-24" />
-          <div className="flex gap-2">
-            <Skeleton className="h-9 w-16" />
-            <Skeleton className="h-9 w-20" />
-          </div>
-        </div>
-
-        {/* 编辑器骨架图 */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="md:col-span-2 space-y-3">
-            <Skeleton className="h-10 w-full" />
-            <Skeleton className="h-48 w-full" />
-            <div className="flex justify-end gap-2">
-              <Skeleton className="h-10 w-20" />
-              <Skeleton className="h-10 w-24" />
-            </div>
-          </div>
-
-          {/* 笔记列表骨架图 */}
-          <div className="space-y-2">
-            <Skeleton className="h-4 w-16" />
-            <div className="space-y-2">
-              {Array.from({ length: 3 }).map((_, i) => (
-                <div key={i} className="rounded-md border p-3 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <Skeleton className="h-4 w-4 rounded-full" />
-                    <Skeleton className="h-3 w-12" />
-                  </div>
-                  <div className="space-y-1">
-                    <Skeleton className="h-3 w-full" />
-                    <Skeleton className="h-3 w-2/3" />
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
-    )
+    return <MinimalSkeleton className="h-64 w-full" />;
   }
 
   if (error) {

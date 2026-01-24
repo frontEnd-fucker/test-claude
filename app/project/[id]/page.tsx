@@ -9,7 +9,7 @@ import KanbanBoard from '@/components/kanban/Board'
 import TodoList from '@/components/sidebar/TodoList'
 import NotesEditor from '@/components/notes/NotesEditor'
 import { AuthGuard } from '@/components/auth/AuthGuard'
-import { Skeleton, CardSkeleton, ListSkeleton, BoardSkeleton } from '@/components/ui/skeleton/index'
+import { Skeleton, CardSkeleton, ListSkeleton, BoardSkeleton, MinimalSkeleton } from '@/components/ui/skeleton/index'
 
 export default function ProjectDetailPage() {
   const params = useParams()
@@ -22,48 +22,17 @@ export default function ProjectDetailPage() {
   if (isLoading) {
     return (
       <div className="space-y-6">
-        {/* 项目头部骨架图 */}
-        <div className="rounded-xl border bg-card p-6 shadow-sm space-y-4">
-          {/* 面包屑导航骨架图 */}
-          <div className="flex items-center gap-2">
-            <Skeleton className="h-4 w-16" />
-            <Skeleton className="h-3 w-3 rounded-full" />
-            <Skeleton className="h-5 w-32" />
-          </div>
-
-          {/* 标题和描述骨架图 */}
-          <div className="space-y-2">
-            <Skeleton className="h-9 w-2/3" />
-            <Skeleton className="h-5 w-1/2" />
-          </div>
-
-          {/* 统计卡片骨架图 */}
-          <div className="grid grid-cols-3 gap-4">
-            {Array.from({ length: 3 }).map((_, i) => (
-              <div key={i} className="rounded-lg bg-muted/50 p-4 space-y-2">
-                <Skeleton className="h-8 w-12" />
-                <Skeleton className="h-4 w-16" />
-              </div>
-            ))}
-          </div>
-        </div>
+        {/* 项目头部 - 极简骨架图 */}
+        <MinimalSkeleton className="h-28 rounded-xl" />
 
         {/* 主仪表板布局骨架图 */}
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-          {/* 侧边栏骨架图 */}
+          {/* 侧边栏 - 极简骨架图 */}
           <div className="lg:col-span-1">
-            <div className="sticky top-24">
-              <div className="rounded-xl border bg-card p-4 shadow-sm space-y-4">
-                <div className="flex items-center gap-2">
-                  <Skeleton className="h-2 w-2 rounded-full" />
-                  <Skeleton className="h-6 w-24" />
-                </div>
-                <ListSkeleton showHeader={false} showInput={true} itemCount={3} showActions={false} />
-              </div>
-            </div>
+            <MinimalSkeleton className="h-[500px] rounded-xl sticky top-16" />
           </div>
 
-          {/* 看板骨架图 */}
+          {/* 看板区域 - 保持详细骨架图 */}
           <div className="lg:col-span-2">
             <div className="rounded-xl border bg-card p-6 shadow-sm space-y-4">
               <div className="flex items-center gap-3">
@@ -75,24 +44,9 @@ export default function ProjectDetailPage() {
             </div>
           </div>
 
-          {/* 笔记区域骨架图 */}
+          {/* 笔记区域 - 极简骨架图 */}
           <div className="lg:col-span-1">
-            <div className="sticky top-24">
-              <div className="rounded-xl border bg-card p-4 shadow-sm space-y-4">
-                <div className="flex items-center gap-2">
-                  <Skeleton className="h-2 w-2 rounded-full" />
-                  <Skeleton className="h-6 w-16" />
-                </div>
-                <div className="space-y-3">
-                  <Skeleton className="h-10 w-full" />
-                  <Skeleton className="h-32 w-full" />
-                  <div className="flex gap-2">
-                    <Skeleton className="h-9 flex-1" />
-                    <Skeleton className="h-9 flex-1" />
-                  </div>
-                </div>
-              </div>
-            </div>
+            <MinimalSkeleton className="h-[500px] rounded-xl sticky top-16" />
           </div>
         </div>
       </div>
@@ -106,11 +60,11 @@ export default function ProjectDetailPage() {
   return (
     <AuthGuard>
       <div className="space-y-6">
-        {/* Project header */}
-        <div className="rounded-xl border bg-card p-6 shadow-sm">
-          <div className="flex flex-col gap-4">
+        {/* Project header - simplified */}
+        <div className="rounded-xl border bg-card p-4 shadow-sm">
+          <div className="flex flex-col gap-3">
             {/* Breadcrumb navigation */}
-            <nav className="flex items-center text-sm text-muted-foreground mb-2" aria-label="Breadcrumb">
+            <nav className="flex items-center text-sm text-muted-foreground" aria-label="Breadcrumb">
               <Link
                 href="/projects"
                 className="hover:text-foreground transition-colors hover:underline"
@@ -124,29 +78,11 @@ export default function ProjectDetailPage() {
             </nav>
 
             <div>
-              <h1 className="text-3xl font-bold">{project.name}</h1>
+              <h1 className="text-2xl font-bold">{project.name}</h1>
               {project.description && (
-                <p className="mt-2 text-muted-foreground">{project.description}</p>
+                <p className="mt-1 text-sm text-muted-foreground">{project.description}</p>
               )}
             </div>
-
-            {/* Project stats */}
-            {!statsLoading && stats && (
-              <div className="grid grid-cols-3 gap-4">
-                <div className="rounded-lg bg-muted/50 p-4">
-                  <div className="text-2xl font-bold">{stats.taskCount}</div>
-                  <div className="text-sm text-muted-foreground">Tasks</div>
-                </div>
-                <div className="rounded-lg bg-muted/50 p-4">
-                  <div className="text-2xl font-bold">{stats.todoCount}</div>
-                  <div className="text-sm text-muted-foreground">Quick Tasks</div>
-                </div>
-                <div className="rounded-lg bg-muted/50 p-4">
-                  <div className="text-2xl font-bold">{stats.noteCount}</div>
-                  <div className="text-sm text-muted-foreground">Notes</div>
-                </div>
-              </div>
-            )}
           </div>
         </div>
 
@@ -154,7 +90,7 @@ export default function ProjectDetailPage() {
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           {/* Sidebar with Todo List */}
           <div className="lg:col-span-1">
-            <div className="sticky top-24">
+            <div className="sticky top-16">
               <div className="rounded-xl border bg-card p-4 shadow-sm">
                 <h2 className="mb-4 text-lg font-semibold flex items-center gap-2">
                   <span className="h-2 w-2 rounded-full bg-neon-green" />
@@ -181,7 +117,7 @@ export default function ProjectDetailPage() {
 
           {/* Notes Area */}
           <div className="lg:col-span-1">
-            <div className="sticky top-24">
+            <div className="sticky top-16">
               <div className="rounded-xl border bg-card p-4 shadow-sm">
                 <h2 className="mb-4 text-lg font-semibold flex items-center gap-2">
                   <span className="h-2 w-2 rounded-full bg-neon-purple" />
