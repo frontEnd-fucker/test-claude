@@ -27,12 +27,17 @@ export async function fetchTodos(projectId?: string): Promise<TodoItem[]> {
 
   if (error) throw error
 
-  // Convert database timestamps to Date objects
+  // Convert database snake_case to TypeScript camelCase
   const todos = data.map(todo => ({
-    ...todo,
+    id: todo.id,
+    text: todo.text,
+    completed: todo.completed,
+    position: todo.position,
+    dueDate: todo.due_date ? new Date(todo.due_date) : undefined,
+    userId: todo.user_id,
+    projectId: todo.project_id,
     createdAt: new Date(todo.created_at),
     updatedAt: new Date(todo.updated_at),
-    dueDate: todo.due_date ? new Date(todo.due_date) : undefined,
   })) as TodoItem[]
 
   return todos
@@ -71,20 +76,23 @@ export async function createTodo(
       position,
       project_id: projectId,
       user_id: user.id,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
     })
     .select()
     .single()
 
   if (error) throw error
 
-  // Convert database timestamps to Date objects
+  // Convert database snake_case to TypeScript camelCase
   return {
-    ...newTodo,
+    id: newTodo.id,
+    text: newTodo.text,
+    completed: newTodo.completed,
+    position: newTodo.position,
+    dueDate: newTodo.due_date ? new Date(newTodo.due_date) : undefined,
+    userId: newTodo.user_id,
+    projectId: newTodo.project_id,
     createdAt: new Date(newTodo.created_at),
     updatedAt: new Date(newTodo.updated_at),
-    dueDate: newTodo.due_date ? new Date(newTodo.due_date) : undefined,
   } as TodoItem
 }
 
@@ -115,12 +123,17 @@ export async function toggleTodo(id: string): Promise<TodoItem> {
 
   if (error) throw error
 
-  // Convert database timestamps to Date objects
+  // Convert database snake_case to TypeScript camelCase
   return {
-    ...updatedTodo,
+    id: updatedTodo.id,
+    text: updatedTodo.text,
+    completed: updatedTodo.completed,
+    position: updatedTodo.position,
+    dueDate: updatedTodo.due_date ? new Date(updatedTodo.due_date) : undefined,
+    userId: updatedTodo.user_id,
+    projectId: updatedTodo.project_id,
     createdAt: new Date(updatedTodo.created_at),
     updatedAt: new Date(updatedTodo.updated_at),
-    dueDate: updatedTodo.due_date ? new Date(updatedTodo.due_date) : undefined,
   } as TodoItem
 }
 

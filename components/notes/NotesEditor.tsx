@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useLayoutEffect } from 'react'
+import { useParams } from 'next/navigation'
 import { useNotesStore } from '@/lib/store'
 import { useNotes, useCreateNote, useUpdateNote, useDeleteNote, useNoteSubscriptions } from '@/lib/queries/notes'
 import { Button } from '@/components/ui/button'
@@ -13,12 +14,13 @@ export default function NotesEditor() {
   const { activeNoteId, setActiveNote } = useNotesStore()
   const [content, setContent] = useState('')
   const [isEditing, setIsEditing] = useState(false)
+  const { id: projectId } = useParams<{ id: string }>()
 
   // Set up real-time subscriptions
   useNoteSubscriptions()
 
   // Fetch notes using TanStack Query
-  const { data: notes = [], isLoading, error, refetch } = useNotes()
+  const { data: notes = [], isLoading, error, refetch } = useNotes({ projectId })
   const createNoteMutation = useCreateNote()
   const updateNoteMutation = useUpdateNote()
   const deleteNoteMutation = useDeleteNote()
@@ -48,7 +50,7 @@ export default function NotesEditor() {
       // Create new note - generate title from first line
       const firstLine = content.split('\n')[0].trim()
       const title = firstLine.length > 0 ? firstLine.substring(0, 50) : 'Untitled Note'
-      createNoteMutation.mutate({ title, content })
+      createNoteMutation.mutate({ title, content, projectId })
     }
     setIsEditing(false)
   }

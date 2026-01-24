@@ -20,7 +20,6 @@ export function useTodoSubscriptions() {
 
       // Convert database record to TodoItem format
       const convertToTodoItem = (record: Record<string, unknown>): TodoItem => ({
-        ...record,
         id: record.id as string,
         text: record.text as string,
         completed: record.completed as boolean,
@@ -36,35 +35,69 @@ export function useTodoSubscriptions() {
         case 'INSERT': {
           const newTodo = convertToTodoItem(newRecord)
 
-          // Update all todo lists
-          queryClient.setQueriesData<TodoItem[]>(
-            { queryKey: todoKeys.all },
-            (old = []) => [...old, newTodo]
-          )
+          // 获取所有匹配的查询
+          const allQueries = queryClient.getQueriesData<TodoItem | TodoItem[]>({
+            queryKey: todoKeys.all,
+          })
+
+          // 对每个查询单独处理
+          allQueries.forEach(([queryKey, data]) => {
+            if (Array.isArray(data)) {
+              // 列表查询 - 添加新待办事项到末尾（保持现有顺序）
+              queryClient.setQueryData(queryKey, [...data, newTodo])
+            }
+            // 详情查询不需要处理INSERT事件
+          })
+
           break
         }
 
         case 'UPDATE': {
           const updatedTodo = convertToTodoItem(newRecord)
 
-          // Update all todo lists
-          queryClient.setQueriesData<TodoItem[]>(
-            { queryKey: todoKeys.all },
-            (old = []) => old.map(todo =>
-              todo.id === updatedTodo.id ? updatedTodo : todo
-            )
-          )
+          // 获取所有匹配的查询
+          const allQueries = queryClient.getQueriesData<TodoItem | TodoItem[]>({
+            queryKey: todoKeys.all,
+          })
+
+          // 对每个查询单独处理
+          allQueries.forEach(([queryKey, data]) => {
+            if (Array.isArray(data)) {
+              // 列表查询 - 更新数组中的待办事项
+              const updatedTodos = data.map(todo =>
+                todo.id === updatedTodo.id ? updatedTodo : todo
+              )
+              queryClient.setQueryData(queryKey, updatedTodos)
+            } else if (data && typeof data === 'object' && (data as TodoItem).id === updatedTodo.id) {
+              // 详情查询 - 更新单个待办事项
+              queryClient.setQueryData(queryKey, updatedTodo)
+            }
+            // 其他情况不处理
+          })
+
           break
         }
 
         case 'DELETE': {
           const deletedId = oldRecord.id as string
 
-          // Update all todo lists
-          queryClient.setQueriesData<TodoItem[]>(
-            { queryKey: todoKeys.all },
-            (old = []) => old.filter(todo => todo.id !== deletedId)
-          )
+          // 获取所有匹配的查询
+          const allQueries = queryClient.getQueriesData<TodoItem | TodoItem[]>({
+            queryKey: todoKeys.all,
+          })
+
+          // 对每个查询单独处理
+          allQueries.forEach(([queryKey, data]) => {
+            if (Array.isArray(data)) {
+              // 列表查询 - 从数组中移除待办事项
+              const updatedTodos = data.filter(todo => todo.id !== deletedId)
+              queryClient.setQueryData(queryKey, updatedTodos)
+            } else if (data && typeof data === 'object' && (data as TodoItem).id === deletedId) {
+              // 详情查询 - 设置为undefined
+              queryClient.setQueryData(queryKey, undefined)
+            }
+          })
+
           break
         }
       }

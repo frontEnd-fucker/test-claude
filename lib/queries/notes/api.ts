@@ -37,9 +37,15 @@ export async function fetchNotes(options?: {
 
   if (error) throw error
 
-  // Convert database timestamps to Date objects
+  // Convert database snake_case to TypeScript camelCase
   const notes = data.map(note => ({
-    ...note,
+    id: note.id,
+    title: note.title,
+    content: note.content,
+    tags: note.tags,
+    isArchived: note.is_archived,
+    userId: note.user_id,
+    projectId: note.project_id,
     createdAt: new Date(note.created_at),
     updatedAt: new Date(note.updated_at),
   })) as Note[]
@@ -72,17 +78,21 @@ export async function createNote(
       is_archived: false,
       project_id: projectId,
       user_id: user.id,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
     })
     .select()
     .single()
 
   if (error) throw error
 
-  // Convert database timestamps to Date objects
+  // Convert database snake_case to TypeScript camelCase
   return {
-    ...newNote,
+    id: newNote.id,
+    title: newNote.title,
+    content: newNote.content,
+    tags: newNote.tags,
+    isArchived: newNote.is_archived,
+    userId: newNote.user_id,
+    projectId: newNote.project_id,
     createdAt: new Date(newNote.created_at),
     updatedAt: new Date(newNote.updated_at),
   } as Note
@@ -115,9 +125,15 @@ export async function updateNote(
 
   if (error) throw error
 
-  // Convert database timestamps to Date objects
+  // Convert database snake_case to TypeScript camelCase
   return {
-    ...updatedNote,
+    id: updatedNote.id,
+    title: updatedNote.title,
+    content: updatedNote.content,
+    tags: updatedNote.tags,
+    isArchived: updatedNote.is_archived,
+    userId: updatedNote.user_id,
+    projectId: updatedNote.project_id,
     createdAt: new Date(updatedNote.created_at),
     updatedAt: new Date(updatedNote.updated_at),
   } as Note

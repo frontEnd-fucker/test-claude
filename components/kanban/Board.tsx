@@ -1,4 +1,4 @@
-'use client'
+"use client";
 
 import {
   DndContext,
@@ -12,34 +12,46 @@ import {
   useSensors,
   rectIntersection,
   pointerWithin,
-} from '@dnd-kit/core'
-import { SortableContext } from '@dnd-kit/sortable'
-import { useState } from 'react'
-import Column from './Column'
-import TaskCard from './TaskCard'
-import TaskForm from './TaskForm'
-import { useTasks, useReorderTasks, useMoveTaskBetweenColumns, useTaskSubscriptions } from '@/lib/queries/tasks'
-import { TaskStatus } from '@/types'
-import { Loader2, AlertCircle } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+} from "@dnd-kit/core";
+import { SortableContext } from "@dnd-kit/sortable";
+import { useState } from "react";
+import Column from "./Column";
+import TaskCard from "./TaskCard";
+import TaskForm from "./TaskForm";
+import {
+  useTasks,
+  useReorderTasks,
+  useMoveTaskBetweenColumns,
+  useTaskSubscriptions,
+} from "@/lib/queries/tasks";
+import { TaskStatus } from "@/types";
+import { Loader2, AlertCircle } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { useParams } from "next/navigation";
 
 const columns: { id: TaskStatus; title: string }[] = [
-  { id: 'todo', title: 'Todo' },
-  { id: 'in-progress', title: 'In Progress' },
-  { id: 'complete', title: 'Complete' },
-]
+  { id: "todo", title: "Todo" },
+  { id: "in-progress", title: "In Progress" },
+  { id: "complete", title: "Complete" },
+];
 
 export default function Board() {
-  const [activeId, setActiveId] = useState<string | null>(null)
-  const [overColumn, setOverColumn] = useState<string | null>(null)
+  const [activeId, setActiveId] = useState<string | null>(null);
+  const [overColumn, setOverColumn] = useState<string | null>(null);
+  const { id: projectId } = useParams<{ id: string }>();
 
   // Set up real-time subscriptions
-  useTaskSubscriptions()
+  useTaskSubscriptions();
 
   // Fetch tasks using TanStack Query
-  const { data: tasks = [], isLoading, error, refetch } = useTasks()
-  const reorderTasksMutation = useReorderTasks()
-  const moveTaskBetweenColumnsMutation = useMoveTaskBetweenColumns()
+  const {
+    data: tasks = [],
+    isLoading,
+    error,
+    refetch,
+  } = useTasks({ projectId });
+  const reorderTasksMutation = useReorderTasks();
+  const moveTaskBetweenColumnsMutation = useMoveTaskBetweenColumns();
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -49,115 +61,129 @@ export default function Board() {
     }),
     useSensor(TouchSensor, {
       activationConstraint: {
-        delay: 100,  // Reduced delay for better touch response
+        delay: 100, // Reduced delay for better touch response
         tolerance: 8, // Increased tolerance for easier touch dragging
       },
     })
-  )
+  );
 
   const handleDragStart = (event: DragStartEvent) => {
-    setActiveId(event.active.id as string)
-    setOverColumn(null)
-  }
+    setActiveId(event.active.id as string);
+    setOverColumn(null);
+  };
 
   const handleDragOver = (event: DragOverEvent) => {
-    const { over } = event
+    const { over } = event;
     if (!over) {
-      setOverColumn(null)
-      return
+      setOverColumn(null);
+      return;
     }
 
     // Check if over is a column
-    if (over.data?.current?.type === 'column') {
-      setOverColumn(over.id as string)
-      return
+    if (over.data?.current?.type === "column") {
+      setOverColumn(over.id as string);
+      return;
     }
 
     // Check if over is a task - get its column status
-    if (over.data?.current?.type === 'task') {
-      setOverColumn(over.data.current.status as string)
-      return
+    if (over.data?.current?.type === "task") {
+      setOverColumn(over.data.current.status as string);
+      return;
     }
 
     // Check if over.id is a column ID (when dropping on empty column or placeholder)
-    if (['todo', 'in-progress', 'complete'].includes(over.id as string)) {
-      setOverColumn(over.id as string)
-      return
+    if (["todo", "in-progress", "complete"].includes(over.id as string)) {
+      setOverColumn(over.id as string);
+      return;
     }
 
-    setOverColumn(null)
-  }
+    setOverColumn(null);
+  };
 
   const handleDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event
-    setActiveId(null)
-    setOverColumn(null)
+    const { active, over } = event;
+    setActiveId(null);
+    setOverColumn(null);
 
-    if (!over) return
+    if (!over) return;
 
-    const activeId = active.id as string
-    const overId = over.id as string
+    const activeId = active.id as string;
+    const overId = over.id as string;
 
     // Find the task being dragged
-    const activeTask = tasks.find((task) => task.id === activeId)
-    if (!activeTask) return
+    const activeTask = tasks.find((task) => task.id === activeId);
+    if (!activeTask) return;
 
     // If dropped on a column (including placeholder for empty columns)
-    if (['todo', 'in-progress', 'complete'].includes(overId) || overId.includes('-placeholder')) {
-      const newStatus = overId.includes('-placeholder')
-        ? overId.replace('-placeholder', '') as TaskStatus
-        : overId as TaskStatus
+    if (
+      ["todo", "in-progress", "complete"].includes(overId) ||
+      overId.includes("-placeholder")
+    ) {
+      const newStatus = overId.includes("-placeholder")
+        ? (overId.replace("-placeholder", "") as TaskStatus)
+        : (overId as TaskStatus);
       if (activeTask.status !== newStatus) {
         // Move between columns
-        const sourceTasks = tasks.filter((task) => task.status === activeTask.status)
-        const sourceIndex = sourceTasks.findIndex((task) => task.id === activeId)
-        const destTasks = tasks.filter((task) => task.status === newStatus)
-        const destIndex = destTasks.length
+        const sourceTasks = tasks.filter(
+          (task) => task.status === activeTask.status
+        );
+        const sourceIndex = sourceTasks.findIndex(
+          (task) => task.id === activeId
+        );
+        const destTasks = tasks.filter((task) => task.status === newStatus);
+        const destIndex = destTasks.length;
 
         moveTaskBetweenColumnsMutation.mutate({
           sourceStatus: activeTask.status,
           destinationStatus: newStatus,
           sourceIndex,
           destinationIndex: destIndex,
-        })
+          projectId,
+        });
       }
-      return
+      return;
     }
 
     // Find the over task
-    const overTask = tasks.find((task) => task.id === overId)
-    if (!overTask) return
+    const overTask = tasks.find((task) => task.id === overId);
+    if (!overTask) return;
 
     // If dropped on a task in the same column
     if (activeTask.status === overTask.status) {
-      const columnTasks = tasks.filter((task) => task.status === activeTask.status)
-      const oldIndex = columnTasks.findIndex((task) => task.id === activeId)
-      const newIndex = columnTasks.findIndex((task) => task.id === overId)
+      const columnTasks = tasks.filter(
+        (task) => task.status === activeTask.status
+      );
+      const oldIndex = columnTasks.findIndex((task) => task.id === activeId);
+      const newIndex = columnTasks.findIndex((task) => task.id === overId);
 
       if (oldIndex !== newIndex) {
         reorderTasksMutation.mutate({
           status: activeTask.status,
           startIndex: oldIndex,
           endIndex: newIndex,
-        })
+          projectId,
+        });
       }
     } else {
       // Move to another column
-      const sourceTasks = tasks.filter((task) => task.status === activeTask.status)
-      const destTasks = tasks.filter((task) => task.status === overTask.status)
-      const sourceIndex = sourceTasks.findIndex((task) => task.id === activeId)
-      const destIndex = destTasks.findIndex((task) => task.id === overId)
+      const sourceTasks = tasks.filter(
+        (task) => task.status === activeTask.status
+      );
+      const destTasks = tasks.filter((task) => task.status === overTask.status);
+      const sourceIndex = sourceTasks.findIndex((task) => task.id === activeId);
+      const destIndex = destTasks.findIndex((task) => task.id === overId);
 
       moveTaskBetweenColumnsMutation.mutate({
         sourceStatus: activeTask.status,
         destinationStatus: overTask.status,
         sourceIndex,
         destinationIndex: destIndex,
-      })
+        projectId,
+      });
     }
-  }
+  };
 
-  const activeTask = tasks.find((task) => task.id === activeId)
+  const activeTask = tasks.find((task) => task.id === activeId);
 
   if (isLoading && tasks.length === 0) {
     return (
@@ -165,7 +191,7 @@ export default function Board() {
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
         <p className="text-muted-foreground">Loading tasks...</p>
       </div>
-    )
+    );
   }
 
   if (error) {
@@ -185,7 +211,7 @@ export default function Board() {
           Retry
         </Button>
       </div>
-    )
+    );
   }
 
   return (
@@ -202,7 +228,9 @@ export default function Board() {
       >
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {columns.map((column) => {
-            const columnTasks = tasks.filter((task) => task.status === column.id)
+            const columnTasks = tasks.filter(
+              (task) => task.status === column.id
+            );
             return (
               <Column
                 key={column.id}
@@ -211,13 +239,19 @@ export default function Board() {
                 taskCount={columnTasks.length}
                 isOver={overColumn === column.id}
               >
-                <SortableContext items={columnTasks.length === 0 ? [`${column.id}-placeholder`] : columnTasks.map((task) => task.id)}>
+                <SortableContext
+                  items={
+                    columnTasks.length === 0
+                      ? [`${column.id}-placeholder`]
+                      : columnTasks.map((task) => task.id)
+                  }
+                >
                   {columnTasks.map((task) => (
                     <TaskCard key={task.id} task={task} />
                   ))}
                 </SortableContext>
               </Column>
-            )
+            );
           })}
         </div>
 
@@ -230,5 +264,5 @@ export default function Board() {
         </DragOverlay>
       </DndContext>
     </div>
-  )
+  );
 }

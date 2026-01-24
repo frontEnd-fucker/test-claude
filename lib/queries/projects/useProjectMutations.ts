@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { projectKeys } from './query-keys'
 import { createProject, updateProject, deleteProject } from './api'
 import { Project } from '@/types/database'
+import { toast } from 'sonner'
 
 export function useCreateProject() {
   const queryClient = useQueryClient()
@@ -34,7 +35,9 @@ export function useCreateProject() {
       }
 
       // Update all project lists (prepend for the list)
-      previousProjects.forEach(([queryKey, projects = []]) => {
+      previousProjects.forEach(([queryKey, data]) => {
+        // Only update if data is an array (list queries)
+        const projects = Array.isArray(data) ? data : []
         // Insert at beginning of the list (most recent first)
         const updatedProjects = [optimisticProject, ...projects]
         queryClient.setQueryData(queryKey, updatedProjects)
@@ -42,11 +45,19 @@ export function useCreateProject() {
 
       return { previousProjects }
     },
+    onSuccess: () => {
+      toast.success('Project created successfully')
+    },
     onError: (err, variables, context) => {
+      console.error('Failed to create project:', err)
+      toast.error('Failed to create project', {
+        description: err instanceof Error ? err.message : 'Unknown error occurred',
+      })
+
       // Rollback on error
       if (context?.previousProjects) {
-        context.previousProjects.forEach(([queryKey, projects]) => {
-          queryClient.setQueryData(queryKey, projects)
+        context.previousProjects.forEach(([queryKey, data]) => {
+          queryClient.setQueryData(queryKey, data)
         })
       }
     },
@@ -73,20 +84,35 @@ export function useUpdateProject() {
       })
 
       // Optimistically update the project
-      previousProjects.forEach(([queryKey, projects = []]) => {
-        const updatedProjects = projects.map(project =>
-          project.id === id ? { ...project, ...updates, updatedAt: new Date() } : project
-        )
-        queryClient.setQueryData(queryKey, updatedProjects)
+      previousProjects.forEach(([queryKey, data]) => {
+        if (Array.isArray(data)) {
+          // List query - update the project in the array
+          const updatedProjects = data.map(project =>
+            project.id === id ? { ...project, ...updates, updatedAt: new Date() } : project
+          )
+          queryClient.setQueryData(queryKey, updatedProjects)
+        } else if (data && typeof data === 'object' && (data as Project).id === id) {
+          // Detail query for this specific project - update the object
+          queryClient.setQueryData(queryKey, { ...(data as Project), ...updates, updatedAt: new Date() })
+        }
+        // If data is not an array or the matching project object, skip
       })
 
       return { previousProjects }
     },
+    onSuccess: () => {
+      toast.success('Project updated successfully')
+    },
     onError: (err, variables, context) => {
+      console.error('Failed to update project:', err)
+      toast.error('Failed to update project', {
+        description: err instanceof Error ? err.message : 'Unknown error occurred',
+      })
+
       // Rollback on error
       if (context?.previousProjects) {
-        context.previousProjects.forEach(([queryKey, projects]) => {
-          queryClient.setQueryData(queryKey, projects)
+        context.previousProjects.forEach(([queryKey, data]) => {
+          queryClient.setQueryData(queryKey, data)
         })
       }
     },
@@ -113,18 +139,33 @@ export function useDeleteProject() {
       })
 
       // Optimistically remove the project
-      previousProjects.forEach(([queryKey, projects = []]) => {
-        const updatedProjects = projects.filter(project => project.id !== id)
-        queryClient.setQueryData(queryKey, updatedProjects)
+      previousProjects.forEach(([queryKey, data]) => {
+        if (Array.isArray(data)) {
+          // List query - remove the project from the array
+          const updatedProjects = data.filter(project => project.id !== id)
+          queryClient.setQueryData(queryKey, updatedProjects)
+        } else if (data && typeof data === 'object' && (data as Project).id === id) {
+          // Detail query for this specific project - remove the data (set to undefined)
+          queryClient.setQueryData(queryKey, undefined)
+        }
+        // If data is not an array or the matching project object, skip
       })
 
       return { previousProjects }
     },
+    onSuccess: () => {
+      toast.success('Project deleted successfully')
+    },
     onError: (err, id, context) => {
+      console.error('Failed to delete project:', err)
+      toast.error('Failed to delete project', {
+        description: err instanceof Error ? err.message : 'Unknown error occurred',
+      })
+
       // Rollback on error
       if (context?.previousProjects) {
-        context.previousProjects.forEach(([queryKey, projects]) => {
-          queryClient.setQueryData(queryKey, projects)
+        context.previousProjects.forEach(([queryKey, data]) => {
+          queryClient.setQueryData(queryKey, data)
         })
       }
     },

@@ -20,9 +20,12 @@ export async function fetchProjects(): Promise<Project[]> {
 
   if (error) throw error
 
-  // Convert database timestamps to Date objects
+  // Convert database snake_case to TypeScript camelCase
   const projects = data.map(project => ({
-    ...project,
+    id: project.id,
+    name: project.name,
+    description: project.description,
+    userId: project.user_id,
     createdAt: new Date(project.created_at),
     updatedAt: new Date(project.updated_at),
   })) as Project[]
@@ -50,17 +53,21 @@ export async function createProject(
       name,
       description,
       user_id: user.id,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
     })
     .select()
     .single()
 
-  if (error) throw error
+  if (error) {
+    console.error('Failed to create project:', error)
+    throw error
+  }
 
-  // Convert database timestamps to Date objects
+  // Convert database snake_case to TypeScript camelCase
   return {
-    ...newProject,
+    id: newProject.id,
+    name: newProject.name,
+    description: newProject.description,
+    userId: newProject.user_id,
     createdAt: new Date(newProject.created_at),
     updatedAt: new Date(newProject.updated_at),
   } as Project
@@ -91,9 +98,12 @@ export async function updateProject(
 
   if (error) throw error
 
-  // Convert database timestamps to Date objects
+  // Convert database snake_case to TypeScript camelCase
   return {
-    ...updatedProject,
+    id: updatedProject.id,
+    name: updatedProject.name,
+    description: updatedProject.description,
+    userId: updatedProject.user_id,
     createdAt: new Date(updatedProject.created_at),
     updatedAt: new Date(updatedProject.updated_at),
   } as Project
@@ -159,9 +169,12 @@ export async function fetchProject(id: string): Promise<Project> {
 
   if (error) throw error
 
-  // Convert database timestamps to Date objects
+  // Convert database snake_case to TypeScript camelCase
   return {
-    ...project,
+    id: project.id,
+    name: project.name,
+    description: project.description,
+    userId: project.user_id,
     createdAt: new Date(project.created_at),
     updatedAt: new Date(project.updated_at),
   } as Project

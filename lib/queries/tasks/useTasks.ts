@@ -9,7 +9,7 @@ interface UseTasksOptions {
 
 export function useTasks({ projectId, enabled = true }: UseTasksOptions = {}) {
   return useQuery({
-    queryKey: taskKeys.list(),
+    queryKey: taskKeys.list({ projectId }),
     queryFn: () => fetchTasks(projectId),
     enabled,
     staleTime: 1000 * 60 * 1,

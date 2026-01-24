@@ -15,11 +15,11 @@ export function useCreateNote() {
     }) => createNote(params.title, params.content, params.tags, params.projectId),
     onMutate: async (params) => {
       // Cancel any outgoing refetches
-      await queryClient.cancelQueries({ queryKey: noteKeys.all })
+      await queryClient.cancelQueries({ queryKey: noteKeys.list({ projectId: params.projectId }) })
 
       // Snapshot the previous value
       const previousNotes = queryClient.getQueriesData<Note[]>({
-        queryKey: noteKeys.all,
+        queryKey: noteKeys.list({ projectId: params.projectId }),
       })
 
       // Optimistically create a new note
@@ -50,9 +50,9 @@ export function useCreateNote() {
         })
       }
     },
-    onSettled: () => {
+    onSettled: (data, error, variables) => {
       // Always refetch after error or success
-      queryClient.invalidateQueries({ queryKey: noteKeys.all })
+      queryClient.invalidateQueries({ queryKey: noteKeys.list({ projectId: variables.projectId }) })
     },
   })
 }
@@ -128,9 +128,9 @@ export function useDeleteNote() {
         })
       }
     },
-    onSettled: () => {
+    onSettled: (data, error, variables) => {
       // Always refetch after error or success
-      queryClient.invalidateQueries({ queryKey: noteKeys.all })
+      queryClient.invalidateQueries({ queryKey: noteKeys.list({ projectId: variables.projectId }) })
     },
   })
 }

@@ -15,17 +15,18 @@ export function useReorderTasks() {
       status: TaskStatus
       startIndex: number
       endIndex: number
-    }) => reorderTasks(params.status, params.startIndex, params.endIndex),
-    onMutate: async ({ status, startIndex, endIndex }) => {
+      projectId?: string
+    }) => reorderTasks(params.status, params.startIndex, params.endIndex, params.projectId),
+    onMutate: async ({ status, startIndex, endIndex, projectId }) => {
       // Cancel any outgoing refetches
-      await queryClient.cancelQueries({ queryKey: taskKeys.list() })
+      await queryClient.cancelQueries({ queryKey: taskKeys.list({ projectId }) })
 
       // Get current optimistic version and increment for this mutation
       const version = ++optimisticVersion
 
       // Snapshot the previous value
       const previousTasks = queryClient.getQueriesData<Task[]>({
-        queryKey: taskKeys.list(),
+        queryKey: taskKeys.list({ projectId }),
       })
 
       // Optimistically reorder tasks in the specified column
@@ -78,7 +79,7 @@ export function useReorderTasks() {
     onSettled: (data, error, variables, context) => {
       // Only refetch for the latest optimistic update
       if (context?.version === optimisticVersion) {
-        queryClient.invalidateQueries({ queryKey: taskKeys.list() })
+        queryClient.invalidateQueries({ queryKey: taskKeys.list({ projectId: variables.projectId }) })
       }
     },
   })
@@ -93,27 +94,30 @@ export function useMoveTaskBetweenColumns() {
       destinationStatus: TaskStatus
       sourceIndex: number
       destinationIndex: number
+      projectId?: string
     }) => moveTaskBetweenColumns(
       params.sourceStatus,
       params.destinationStatus,
       params.sourceIndex,
-      params.destinationIndex
+      params.destinationIndex,
+      params.projectId
     ),
     onMutate: async ({
       sourceStatus,
       destinationStatus,
       sourceIndex,
       destinationIndex,
+      projectId,
     }) => {
       // Cancel any outgoing refetches
-      await queryClient.cancelQueries({ queryKey: taskKeys.list() })
+      await queryClient.cancelQueries({ queryKey: taskKeys.list({ projectId }) })
 
       // Get current optimistic version and increment for this mutation
       const version = ++optimisticVersion
 
       // Snapshot the previous value
       const previousTasks = queryClient.getQueriesData<Task[]>({
-        queryKey: taskKeys.list(),
+        queryKey: taskKeys.list({ projectId }),
       })
 
       // Optimistically move task between columns
@@ -179,7 +183,7 @@ export function useMoveTaskBetweenColumns() {
     onSettled: (data, error, variables, context) => {
       // Only refetch for the latest optimistic update
       if (context?.version === optimisticVersion) {
-        queryClient.invalidateQueries({ queryKey: taskKeys.list() })
+        queryClient.invalidateQueries({ queryKey: taskKeys.list({ projectId: variables.projectId }) })
       }
     },
   })

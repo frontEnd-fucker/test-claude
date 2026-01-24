@@ -27,12 +27,20 @@ export async function fetchTasks(projectId?: string): Promise<Task[]> {
 
   if (error) throw error
 
-  // Convert database timestamps to Date objects
+  // Convert database snake_case to TypeScript camelCase
   const tasks = data.map(task => ({
-    ...task,
+    id: task.id,
+    title: task.title,
+    description: task.description,
+    status: task.status as TaskStatus,
+    priority: task.priority as PriorityLevel | undefined,
+    position: task.position,
+    dueDate: task.due_date ? new Date(task.due_date) : undefined,
+    projectId: task.project_id,
+    userId: task.user_id,
+    assigneeId: task.assignee_id,
     createdAt: new Date(task.created_at),
     updatedAt: new Date(task.updated_at),
-    dueDate: task.due_date ? new Date(task.due_date) : undefined,
   })) as Task[]
 
   return tasks
@@ -77,20 +85,26 @@ export async function createTask(
       position,
       project_id: projectId,
       user_id: user.id,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
     })
     .select()
     .single()
 
   if (error) throw error
 
-  // Convert database timestamps to Date objects
+  // Convert database snake_case to TypeScript camelCase
   return {
-    ...newTask,
+    id: newTask.id,
+    title: newTask.title,
+    description: newTask.description,
+    status: newTask.status as TaskStatus,
+    priority: newTask.priority as PriorityLevel | undefined,
+    position: newTask.position,
+    dueDate: newTask.due_date ? new Date(newTask.due_date) : undefined,
+    projectId: newTask.project_id,
+    userId: newTask.user_id,
+    assigneeId: newTask.assignee_id,
     createdAt: new Date(newTask.created_at),
     updatedAt: new Date(newTask.updated_at),
-    dueDate: newTask.due_date ? new Date(newTask.due_date) : undefined,
   } as Task
 }
 
@@ -124,12 +138,20 @@ export async function updateTask(
 
   if (error) throw error
 
-  // Convert database timestamps to Date objects
+  // Convert database snake_case to TypeScript camelCase
   return {
-    ...updatedTask,
+    id: updatedTask.id,
+    title: updatedTask.title,
+    description: updatedTask.description,
+    status: updatedTask.status as TaskStatus,
+    priority: updatedTask.priority as PriorityLevel | undefined,
+    position: updatedTask.position,
+    dueDate: updatedTask.due_date ? new Date(updatedTask.due_date) : undefined,
+    projectId: updatedTask.project_id,
+    userId: updatedTask.user_id,
+    assigneeId: updatedTask.assignee_id,
     createdAt: new Date(updatedTask.created_at),
     updatedAt: new Date(updatedTask.updated_at),
-    dueDate: updatedTask.due_date ? new Date(updatedTask.due_date) : undefined,
   } as Task
 }
 
@@ -152,7 +174,8 @@ export async function deleteTask(id: string): Promise<void> {
 export async function reorderTasks(
   status: TaskStatus,
   startIndex: number,
-  endIndex: number
+  endIndex: number,
+  projectId?: string
 ): Promise<void> {
   const supabase = createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -162,11 +185,17 @@ export async function reorderTasks(
   }
 
   // Fetch all tasks in the column
-  const { data: tasks, error: fetchError } = await supabase
+  let query = supabase
     .from('tasks')
     .select('*')
     .eq('user_id', user.id)
     .eq('status', status)
+
+  if (projectId) {
+    query = query.eq('project_id', projectId)
+  }
+
+  const { data: tasks, error: fetchError } = await query
     .order('position', { ascending: true })
 
   if (fetchError) throw fetchError
@@ -203,7 +232,8 @@ export async function moveTaskBetweenColumns(
   sourceStatus: TaskStatus,
   destinationStatus: TaskStatus,
   sourceIndex: number,
-  destinationIndex: number
+  destinationIndex: number,
+  projectId?: string
 ): Promise<void> {
   const supabase = createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -213,11 +243,17 @@ export async function moveTaskBetweenColumns(
   }
 
   // Fetch all tasks for both columns
-  const { data: allTasks, error: fetchError } = await supabase
+  let query = supabase
     .from('tasks')
     .select('*')
     .eq('user_id', user.id)
     .in('status', [sourceStatus, destinationStatus])
+
+  if (projectId) {
+    query = query.eq('project_id', projectId)
+  }
+
+  const { data: allTasks, error: fetchError } = await query
     .order('position', { ascending: true })
 
   if (fetchError) throw fetchError

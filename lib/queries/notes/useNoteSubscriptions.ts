@@ -20,7 +20,6 @@ export function useNoteSubscriptions() {
 
       // Convert database record to Note format
       const convertToNote = (record: Record<string, unknown>): Note => ({
-        ...record,
         id: record.id as string,
         title: record.title as string,
         content: record.content as string,
@@ -36,35 +35,69 @@ export function useNoteSubscriptions() {
         case 'INSERT': {
           const newNote = convertToNote(newRecord)
 
-          // Update all note lists (prepend for chronological order)
-          queryClient.setQueriesData<Note[]>(
-            { queryKey: noteKeys.all },
-            (old = []) => [newNote, ...old]
-          )
+          // 获取所有匹配的查询
+          const allQueries = queryClient.getQueriesData<Note | Note[]>({
+            queryKey: noteKeys.all,
+          })
+
+          // 对每个查询单独处理
+          allQueries.forEach(([queryKey, data]) => {
+            if (Array.isArray(data)) {
+              // 列表查询 - 添加新笔记到开头
+              queryClient.setQueryData(queryKey, [newNote, ...data])
+            }
+            // 详情查询不需要处理INSERT事件
+          })
+
           break
         }
 
         case 'UPDATE': {
           const updatedNote = convertToNote(newRecord)
 
-          // Update all note lists
-          queryClient.setQueriesData<Note[]>(
-            { queryKey: noteKeys.all },
-            (old = []) => old.map(note =>
-              note.id === updatedNote.id ? updatedNote : note
-            )
-          )
+          // 获取所有匹配的查询
+          const allQueries = queryClient.getQueriesData<Note | Note[]>({
+            queryKey: noteKeys.all,
+          })
+
+          // 对每个查询单独处理
+          allQueries.forEach(([queryKey, data]) => {
+            if (Array.isArray(data)) {
+              // 列表查询 - 更新数组中的笔记
+              const updatedNotes = data.map(note =>
+                note.id === updatedNote.id ? updatedNote : note
+              )
+              queryClient.setQueryData(queryKey, updatedNotes)
+            } else if (data && typeof data === 'object' && (data as Note).id === updatedNote.id) {
+              // 详情查询 - 更新单个笔记
+              queryClient.setQueryData(queryKey, updatedNote)
+            }
+            // 其他情况不处理
+          })
+
           break
         }
 
         case 'DELETE': {
           const deletedId = oldRecord.id as string
 
-          // Update all note lists
-          queryClient.setQueriesData<Note[]>(
-            { queryKey: noteKeys.all },
-            (old = []) => old.filter(note => note.id !== deletedId)
-          )
+          // 获取所有匹配的查询
+          const allQueries = queryClient.getQueriesData<Note | Note[]>({
+            queryKey: noteKeys.all,
+          })
+
+          // 对每个查询单独处理
+          allQueries.forEach(([queryKey, data]) => {
+            if (Array.isArray(data)) {
+              // 列表查询 - 从数组中移除笔记
+              const updatedNotes = data.filter(note => note.id !== deletedId)
+              queryClient.setQueryData(queryKey, updatedNotes)
+            } else if (data && typeof data === 'object' && (data as Note).id === deletedId) {
+              // 详情查询 - 设置为undefined
+              queryClient.setQueryData(queryKey, undefined)
+            }
+          })
+
           break
         }
       }
