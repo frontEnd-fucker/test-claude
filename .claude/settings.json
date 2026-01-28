@@ -1,5 +1,8 @@
 {
   "enabledPlugins": {
-    "dev-browser@dev-browser-marketplace": false
+    "dev-browser@dev-browser-marketplace": false,
+    "document-skills@anthropic-agent-skills": true,
+    "example-skills@anthropic-agent-skills": true,
+    "developer-essentials@claude-code-workflows": true
   }
 }
