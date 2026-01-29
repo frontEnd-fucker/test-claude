@@ -42,3 +42,8 @@ next-env.d.ts
 
 # temp
 /supabase/.temp
+
+# Playwright test results
+test-results/
+playwright-report/
+playwright/.cache/

@@ -204,7 +204,7 @@ def test_create_project():
             success_indicators = [
                 'text="Project created successfully"',
                 'text="successfully"',
-                '.project-card:has-text("Test Project from Automation")',
+                '[data-testid="project-card"]:has-text("Test Project from Automation")',
                 'text="Test Project from Automation"'
             ]
 

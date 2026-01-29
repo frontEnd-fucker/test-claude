@@ -72,7 +72,7 @@ export default function ProjectCard({ project }: ProjectCardProps) {
   }
 
   return (
-    <div className="group relative rounded-lg border bg-card p-4 shadow-sm transition-all hover:shadow-md">
+    <div data-testid="project-card" className="group relative rounded-lg border bg-card p-4 shadow-sm transition-all hover:shadow-md">
       {/* 方案一：使用透明覆盖层优化点击体验 - 悬停时显示视觉反馈 */}
       <Link
         href={`/project/${project.id}`}
@@ -82,7 +82,7 @@ export default function ProjectCard({ project }: ProjectCardProps) {
       <div className="relative flex items-start justify-between">
         <div className="flex-1">
           <div className="flex items-center gap-2">
-            <h4 className="font-semibold text-lg">{project.name}</h4>
+            <h4 data-testid="card-title" className="font-semibold text-lg">{project.name}</h4>
           </div>
           {project.description && (
             <p className="mt-2 text-sm text-muted-foreground">{project.description}</p>
