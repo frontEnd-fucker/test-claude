@@ -1,4 +1,6 @@
 import { test, expect } from './utils/auth-fixtures';
+import { ProjectsPage } from './pages/ProjectsPage';
+import { ProjectFormDialog } from './pages/ProjectFormDialog';
 
 // 测试数据
 const TEST_PROJECTS = {
@@ -17,11 +19,12 @@ const TEST_PROJECTS = {
 
 test.describe('项目创建流程 (使用共享Fixture)', () => {
   test('应该能够成功创建带描述的项目', async ({
-    authenticatedPage,
-    projectsPage,
-    projectFormDialog
+    loggedInPage
   }) => {
-    // authenticatedPage已经是登录状态，projectsPage和projectFormDialog已初始化
+    // 从已登录的页面创建POM对象
+    const projectsPage = new ProjectsPage(loggedInPage);
+    const projectFormDialog = new ProjectFormDialog(loggedInPage);
+
     await test.step('导航到项目页面', async () => {
       await projectsPage.goto();
       await expect(projectsPage.heading).toBeVisible();
@@ -48,10 +51,12 @@ test.describe('项目创建流程 (使用共享Fixture)', () => {
   });
 
   test('应该能够创建没有描述的项目', async ({
-    authenticatedPage,
-    projectsPage,
-    projectFormDialog
+    loggedInPage
   }) => {
+    // 从已登录的页面创建POM对象
+    const projectsPage = new ProjectsPage(loggedInPage);
+    const projectFormDialog = new ProjectFormDialog(loggedInPage);
+
     await test.step('创建没有描述的项目', async () => {
       await projectsPage.goto();
       await projectsPage.openNewProjectDialog();
@@ -66,10 +71,12 @@ test.describe('项目创建流程 (使用共享Fixture)', () => {
   });
 
   test('应该验证必填字段', async ({
-    authenticatedPage,
-    projectsPage,
-    projectFormDialog
+    loggedInPage
   }) => {
+    // 从已登录的页面创建POM对象
+    const projectsPage = new ProjectsPage(loggedInPage);
+    const projectFormDialog = new ProjectFormDialog(loggedInPage);
+
     await test.step('打开项目创建对话框', async () => {
       await projectsPage.goto();
       await projectsPage.openNewProjectDialog();
@@ -101,10 +108,12 @@ test.describe('项目创建流程 (使用共享Fixture)', () => {
   });
 
   test('应该能够取消项目创建', async ({
-    authenticatedPage,
-    projectsPage,
-    projectFormDialog
+    loggedInPage
   }) => {
+    // 从已登录的页面创建POM对象
+    const projectsPage = new ProjectsPage(loggedInPage);
+    const projectFormDialog = new ProjectFormDialog(loggedInPage);
+
     await test.step('打开项目创建对话框', async () => {
       await projectsPage.goto();
       await projectsPage.openNewProjectDialog();
@@ -122,7 +131,7 @@ test.describe('项目创建流程 (使用共享Fixture)', () => {
 
     await test.step('验证项目没有被创建', async () => {
       // 等待页面稳定
-      await authenticatedPage.waitForTimeout(1000);
+      await loggedInPage.waitForTimeout(1000);
 
       // 检查没有新项目被创建（项目数量应该保持不变）
       const initialCount = await projectsPage.getProjectCount();
@@ -137,10 +146,12 @@ test.describe('项目创建流程 (使用共享Fixture)', () => {
   });
 
   test('应该在空状态和列表状态都能工作', async ({
-    authenticatedPage,
-    projectsPage,
-    projectFormDialog
+    loggedInPage
   }) => {
+    // 从已登录的页面创建POM对象
+    const projectsPage = new ProjectsPage(loggedInPage);
+    const projectFormDialog = new ProjectFormDialog(loggedInPage);
+
     await test.step('检查初始状态', async () => {
       await projectsPage.goto();
     });
@@ -188,21 +199,3 @@ test.describe('项目创建流程 (使用共享Fixture)', () => {
   });
 });
 
-// 使用ensureLoggedIn辅助函数的示例
-test.describe('使用ensureLoggedIn辅助函数', () => {
-  test('示例测试', async ({ page, ensureLoggedIn, projectsPage, projectFormDialog }) => {
-    // 手动调用ensureLoggedIn
-    await ensureLoggedIn();
-
-    // 现在page已经是登录状态
-    await projectsPage.goto();
-    await projectsPage.openNewProjectDialog();
-
-    const projectName = `Test Project ${Date.now()}`;
-    await projectFormDialog.createProject(projectName);
-
-    await projectsPage.waitForProjectToAppear(projectName);
-    const hasProject = await projectsPage.hasProject(projectName);
-    expect(hasProject).toBe(true);
-  });
-});

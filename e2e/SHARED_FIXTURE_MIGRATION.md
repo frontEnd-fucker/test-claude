@@ -15,51 +15,37 @@
 
 ## 共享Fixture详解
 
-### 提供的Fixtures
+### 提供的Fixtures（简化版）
 
 | Fixture名称 | 类型 | 描述 |
 |------------|------|------|
-| `authenticatedPage` | `Page` | 已登录的页面对象，自动处理登录流程 |
+| `loggedInPage` | `Page` | 已登录的页面对象，自动处理登录流程 |
+| `loggedInContext` | `BrowserContext` | 已登录的浏览器上下文 |
 | `testUser` | `{email: string, password: string}` | 测试用户凭据，从环境变量读取 |
-| `loginPage` | `LoginPage` | 登录页面对象 |
-| `projectsPage` | `ProjectsPage` | 项目页面对象 |
-| `projectFormDialog` | `ProjectFormDialog` | 项目表单对话框对象 |
-| `ensureLoggedIn` | `() => Promise<void>` | 确保登录的辅助函数 |
+
+**注意**：不再提供`loginPage`、`projectsPage`、`projectFormDialog`等页面对象作为独立fixture。测试应该从`loggedInPage`自行创建所需的页面对象。
 
 ### 使用方式
 
-#### 方式1：使用已认证的页面（推荐）
+#### 方式1：使用已登录的页面（推荐）
 ```typescript
 import { test, expect } from "./utils/auth-fixtures";
+import { ProjectsPage } from "./pages/ProjectsPage";
+import { ProjectFormDialog } from "./pages/ProjectFormDialog";
 
 test("测试用例", async ({
-  authenticatedPage,      // 已登录的页面
-  projectsPage,          // 项目页面对象
-  projectFormDialog      // 项目表单对话框对象
+  loggedInPage      // 已登录的页面
 }) => {
-  // authenticatedPage已经是登录状态
+  // 从已登录的页面创建所需页面对象
+  const projectsPage = new ProjectsPage(loggedInPage);
+  const projectFormDialog = new ProjectFormDialog(loggedInPage);
+
+  // loggedInPage已经是登录状态
   await projectsPage.goto();
   // ... 测试逻辑
 });
 ```
 
-#### 方式2：使用ensureLoggedIn辅助函数
-```typescript
-import { test, expect } from "./utils/auth-fixtures";
-
-test("测试用例", async ({
-  page,
-  ensureLoggedIn,
-  projectsPage
-}) => {
-  // 手动调用ensureLoggedIn
-  await ensureLoggedIn();
-
-  // 现在page已经是登录状态
-  await projectsPage.goto();
-  // ... 测试逻辑
-});
-```
 
 ## 迁移步骤
 
@@ -94,14 +80,15 @@ test("测试用例", async ({
 - });
 ```
 
-### 步骤4：更新测试函数参数
+### 步骤4：更新测试函数参数并创建POM对象
 ```diff
 - test("测试用例", async ({ page }) => {
 + test("测试用例", async ({
-+   authenticatedPage,
-+   projectsPage,
-+   projectFormDialog
++   loggedInPage
 + }) => {
++   // 从已登录的页面创建所需POM对象
++   const projectsPage = new ProjectsPage(loggedInPage);
++   const projectFormDialog = new ProjectFormDialog(loggedInPage);
 ```
 
 ### 步骤5：移除登录逻辑
@@ -112,6 +99,7 @@ test("测试用例", async ({
 -     await loginPage.waitForLoginSuccess();
 -   }
 - });
++ // 登录逻辑已由loggedInPage fixture自动处理
 ```
 
 ### 步骤6：更新页面引用
@@ -119,7 +107,7 @@ test("测试用例", async ({
 - await loginPage.login(TEST_USER.email, TEST_USER.password);
 - await projectsPage.goto();
 - await projectFormDialog.createProject(...);
-+ // authenticatedPage已自动登录
++ // loggedInPage已自动登录，使用本地创建的POM对象
 + await projectsPage.goto();
 + await projectFormDialog.createProject(...);
 ```
@@ -150,11 +138,13 @@ test("测试用例", async ({
 ```typescript
 // 在测试文件中重新定义独立的fixture
 import { test as base } from './utils/auth-fixtures';
+import { LoginPage } from './pages/LoginPage';
 
 const test = base.extend({
-  // 覆盖authenticatedPage，使其在每个测试中重新登录
-  authenticatedPage: async ({ page, loginPage, testUser }, use) => {
+  // 覆盖loggedInPage，使其在每个测试中重新登录
+  loggedInPage: async ({ page, testUser }, use) => {
     // 每次使用都重新登录
+    const loginPage = new LoginPage(page);
     await page.goto('/auth/login');
     await loginPage.login(testUser.email, testUser.password);
     await loginPage.waitForLoginSuccess();
