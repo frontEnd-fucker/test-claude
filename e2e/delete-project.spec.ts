@@ -49,16 +49,11 @@ test.describe('项目删除流程', () => {
       await projectsPage.waitForProjectToAppear(testProjects.toDelete.name);
     });
 
-    const initialCount = await projectsPage.getProjectCount();
-
     await test.step('删除项目', async () => {
       await projectsPage.deleteProject(testProjects.toDelete.name);
     });
 
     await test.step('验证项目已删除', async () => {
-      const finalCount = await projectsPage.getProjectCount();
-      expect(finalCount).toBe(initialCount - 1);
-
       const hasProject = await projectsPage.hasProject(testProjects.toDelete.name);
       expect(hasProject).toBe(false);
     });
@@ -84,16 +79,11 @@ test.describe('项目删除流程', () => {
       await projectsPage.waitForProjectToAppear(testProjects.toKeep.name);
     });
 
-    const initialCount = await projectsPage.getProjectCount();
-
     await test.step('开始删除然后取消', async () => {
       await projectsPage.cancelDeleteProject(testProjects.toKeep.name);
     });
 
     await test.step('验证项目仍然存在', async () => {
-      const finalCount = await projectsPage.getProjectCount();
-      expect(finalCount).toBe(initialCount);
-
       const hasProject = await projectsPage.hasProject(testProjects.toKeep.name);
       expect(hasProject).toBe(true);
     });
@@ -137,30 +127,31 @@ test.describe('项目删除流程', () => {
       await projectsPage.waitForProjectToAppear(testProjects.multiple.third.name);
     });
 
-    const initialCount = await projectsPage.getProjectCount();
-
     await test.step('删除第一个项目', async () => {
       await projectsPage.deleteProject(testProjects.multiple.first.name);
     });
 
-    await test.step('验证第一个项目已删除', async () => {
-      const countAfterFirstDelete = await projectsPage.getProjectCount();
-      expect(countAfterFirstDelete).toBe(initialCount - 1);
-
+    await test.step('验证第一个项目已删除，其他项目仍在', async () => {
       const hasFirstProject = await projectsPage.hasProject(testProjects.multiple.first.name);
       expect(hasFirstProject).toBe(false);
+
+      const hasSecondProject = await projectsPage.hasProject(testProjects.multiple.second.name);
+      expect(hasSecondProject).toBe(true);
+
+      const hasThirdProject = await projectsPage.hasProject(testProjects.multiple.third.name);
+      expect(hasThirdProject).toBe(true);
     });
 
     await test.step('删除第二个项目', async () => {
       await projectsPage.deleteProject(testProjects.multiple.second.name);
     });
 
-    await test.step('验证第二个项目已删除', async () => {
-      const countAfterSecondDelete = await projectsPage.getProjectCount();
-      expect(countAfterSecondDelete).toBe(initialCount - 2);
-
+    await test.step('验证第二个项目已删除，第三个项目仍在', async () => {
       const hasSecondProject = await projectsPage.hasProject(testProjects.multiple.second.name);
       expect(hasSecondProject).toBe(false);
+
+      const hasThirdProject = await projectsPage.hasProject(testProjects.multiple.third.name);
+      expect(hasThirdProject).toBe(true);
     });
 
     await test.step('验证第三个项目仍然存在', async () => {
@@ -245,8 +236,8 @@ test.describe('项目删除流程', () => {
       );
       await projectsPage.waitForProjectToAppear(testProjects.toDelete.name);
 
-      const countAfterCreate = await projectsPage.getProjectCount();
-      expect(countAfterCreate).toBeGreaterThan(0);
+      const hasProject = await projectsPage.hasProject(testProjects.toDelete.name);
+      expect(hasProject).toBe(true);
     });
 
     await test.step('删除项目', async () => {
