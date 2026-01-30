@@ -119,6 +119,7 @@ export default function ProjectCard({ project }: ProjectCardProps) {
             <Button
               variant="ghost"
               size="icon"
+              data-testid="project-card-menu-button"
               className="relative z-10 h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
               onClick={(e) => e.stopPropagation()}
             >

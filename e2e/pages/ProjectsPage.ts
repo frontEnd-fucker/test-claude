@@ -66,4 +66,68 @@ export class ProjectsPage {
     });
     await cardLocator.waitFor({ state: "visible", timeout });
   }
+
+  async waitForProjectToDisappear(name: string, timeout = 5000) {
+    const cardLocator = this.page.locator('[data-testid="project-card"]', {
+      hasText: name,
+    });
+    await cardLocator.waitFor({ state: "hidden", timeout });
+  }
+
+  async getProjectCardByName(name: string): Promise<Locator> {
+    return this.page.locator('[data-testid="project-card"]', {
+      hasText: name,
+    });
+  }
+
+  async openProjectMenu(projectName: string) {
+    const projectCard = await this.getProjectCardByName(projectName);
+
+    // 悬停在项目卡片上以显示菜单按钮
+    await projectCard.hover();
+
+    // 等待菜单按钮出现（通过data-testid定位）
+    const menuButton = projectCard.getByTestId('project-card-menu-button');
+    await menuButton.waitFor({ state: "visible" });
+
+    // 点击菜单按钮
+    await menuButton.click();
+
+    // 等待菜单打开
+    await this.page.getByRole("menu").waitFor({ state: "visible" });
+  }
+
+  async deleteProject(projectName: string) {
+    await this.openProjectMenu(projectName);
+
+    // 点击删除菜单项
+    await this.page.getByRole("menuitem", { name: "Delete" }).click();
+
+    // 等待删除确认对话框出现
+    const deleteDialog = this.page.getByRole("dialog");
+    await deleteDialog.waitFor({ state: "visible" });
+
+    // 确认删除
+    await this.page.getByRole("button", { name: "Delete" }).click();
+
+    // 等待删除完成
+    await this.waitForProjectToDisappear(projectName);
+  }
+
+  async cancelDeleteProject(projectName: string) {
+    await this.openProjectMenu(projectName);
+
+    // 点击删除菜单项
+    await this.page.getByRole("menuitem", { name: "Delete" }).click();
+
+    // 等待删除确认对话框出现
+    const deleteDialog = this.page.getByRole("dialog");
+    await deleteDialog.waitFor({ state: "visible" });
+
+    // 取消删除
+    await this.page.getByRole("button", { name: "Cancel" }).click();
+
+    // 等待对话框关闭
+    await deleteDialog.waitFor({ state: "hidden" });
+  }
 }
