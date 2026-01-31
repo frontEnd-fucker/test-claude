@@ -4,7 +4,7 @@ import { Project, InsertProject, UpdateProject } from '@/types/database'
 /**
  * Fetch projects for the current user
  */
-export async function fetchProjects(): Promise<Project[]> {
+export async function fetchProjects(searchQuery?: string): Promise<Project[]> {
   const supabase = createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
@@ -12,11 +12,21 @@ export async function fetchProjects(): Promise<Project[]> {
     throw new Error('User not authenticated')
   }
 
-  const { data, error } = await supabase
+  let query = supabase
     .from('projects')
     .select('*')
     .eq('user_id', user.id)
-    .order('created_at', { ascending: false })
+
+  // Add search filter if searchQuery is provided
+  if (searchQuery && searchQuery.trim() !== '') {
+    const searchTerm = `%${searchQuery.trim()}%`
+    // Search in both name and description fields
+    query = query.or(`name.ilike.${searchTerm},description.ilike.${searchTerm}`)
+  }
+
+  query = query.order('created_at', { ascending: false })
+
+  const { data, error } = await query
 
   if (error) throw error
 
