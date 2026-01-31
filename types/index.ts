@@ -1,6 +1,16 @@
 // Re-export database types for backward compatibility
 export type { TaskStatus, PriorityLevel } from './database'
-export type { Task, TodoItem, Note, Project, InsertProject, UpdateProject } from './database'
+export type {
+  Task,
+  TodoItem,
+  Note,
+  Project,
+  ProjectMember,
+  InsertProject,
+  UpdateProject,
+  InsertProjectMember,
+  UpdateProjectMember,
+} from './database'
 
 // Helper functions
 export function generateId(): string {

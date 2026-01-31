@@ -8,6 +8,5 @@ export function useProjects(searchQuery?: string) {
     queryFn: () => fetchProjects(searchQuery),
     staleTime: 1000 * 60 * 1,
     gcTime: 1000 * 60 * 5,
-    keepPreviousData: true, // Keep previous data while new data is loading
   });
 }

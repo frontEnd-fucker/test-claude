@@ -8,6 +8,7 @@ import { useProject, useProjectStats } from '@/lib/queries/projects'
 import KanbanBoard from '@/components/kanban/Board'
 import TodoList from '@/components/sidebar/TodoList'
 import NotesEditor from '@/components/notes/NotesEditor'
+import ProjectMembers from '@/components/project/ProjectMembers'
 import { AuthGuard } from '@/components/auth/AuthGuard'
 import { Skeleton, CardSkeleton, ListSkeleton, BoardSkeleton, MinimalSkeleton } from '@/components/ui/skeleton/index'
 
@@ -82,6 +83,11 @@ export default function ProjectDetailPage() {
               {project.description && (
                 <p className="mt-1 text-sm text-muted-foreground">{project.description}</p>
               )}
+            </div>
+
+            {/* Members section */}
+            <div className="mt-4 pt-4 border-t">
+              <ProjectMembers projectId={projectId} compact />
             </div>
           </div>
         </div>

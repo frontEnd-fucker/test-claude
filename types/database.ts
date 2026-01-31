@@ -8,6 +8,7 @@ export interface User {
   id: string // Supabase UUID
   email: string
   name?: string
+  avatarUrl?: string
   createdAt: Date
   updatedAt: Date
 }
@@ -16,9 +17,23 @@ export interface Project {
   id: string
   name: string
   description?: string
-  userId: string // References auth.users.id
+  userId: string // References auth.users.id (owner)
   createdAt: Date
   updatedAt: Date
+  members?: ProjectMember[]  // Optional member list
+}
+
+export interface ProjectMember {
+  id: string
+  projectId: string
+  userId: string
+  role: 'owner' | 'admin' | 'member' | 'viewer'
+  status: 'active' | 'inactive'
+  invitedBy?: string
+  joinedAt: Date
+  createdAt: Date
+  updatedAt: Date
+  user?: User  // Associated user information
 }
 
 export interface Task {
@@ -65,12 +80,14 @@ export type InsertTask = Omit<Task, 'id' | 'createdAt' | 'updatedAt'> & Partial<
 export type InsertTodoItem = Omit<TodoItem, 'id' | 'createdAt' | 'updatedAt'> & Partial<Pick<TodoItem, 'id' | 'createdAt' | 'updatedAt'>>
 export type InsertNote = Omit<Note, 'id' | 'createdAt' | 'updatedAt'> & Partial<Pick<Note, 'id' | 'createdAt' | 'updatedAt'>>
 export type InsertProject = Omit<Project, 'id' | 'createdAt' | 'updatedAt'> & Partial<Pick<Project, 'id' | 'createdAt' | 'updatedAt'>>
+export type InsertProjectMember = Omit<ProjectMember, 'id' | 'createdAt' | 'updatedAt'> & Partial<Pick<ProjectMember, 'id' | 'createdAt' | 'updatedAt'>>
 
 // Update types (for updating records)
 export type UpdateTask = Partial<Omit<Task, 'id' | 'userId' | 'createdAt' | 'updatedAt'>>
 export type UpdateTodoItem = Partial<Omit<TodoItem, 'id' | 'userId' | 'createdAt' | 'updatedAt'>>
 export type UpdateNote = Partial<Omit<Note, 'id' | 'userId' | 'createdAt' | 'updatedAt'>>
 export type UpdateProject = Partial<Omit<Project, 'id' | 'userId' | 'createdAt' | 'updatedAt'>>
+export type UpdateProjectMember = Partial<Omit<ProjectMember, 'id' | 'projectId' | 'userId' | 'createdAt' | 'updatedAt'>>
 
 // Type guards
 export function isTask(obj: unknown): obj is Task {

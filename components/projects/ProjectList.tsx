@@ -29,7 +29,7 @@ export default function ProjectList() {
   // Track previous search query and data to detect when search completes
   const prevSearchQueryRef = useRef(initialSearchQuery)
   const prevIsFetchingRef = useRef(false) // Assume not fetching initially
-  const prevProjectsRef = useRef([]) // Empty array initially
+  const prevProjectsRef = useRef<unknown[]>([]) // Empty array initially
 
   // Fetch projects using TanStack Query with search query
   const { data: projects = [], isLoading, isFetching, error, refetch } = useProjects(searchQuery)

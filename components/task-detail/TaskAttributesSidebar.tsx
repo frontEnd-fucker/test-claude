@@ -3,10 +3,12 @@
 import { useState } from 'react'
 import { Task } from '@/types'
 import { useUpdateTask } from '@/lib/queries/tasks'
+import { useProjectMembers } from '@/lib/queries/members/useProjectMembers'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Calendar, User, Flag, Loader2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -20,6 +22,8 @@ export default function TaskAttributesSidebar({ task, projectId }: TaskAttribute
   const [dueDate, setDueDate] = useState(
     task.dueDate ? task.dueDate.toISOString().split('T')[0] : ''
   )
+
+  const { data: members = [], isLoading: isLoadingMembers } = useProjectMembers(projectId)
 
   const handlePriorityChange = (value: string) => {
     updateTaskMutation.mutate({
@@ -90,17 +94,86 @@ export default function TaskAttributesSidebar({ task, projectId }: TaskAttribute
           <Select
             value={task.assigneeId || 'unassigned'}
             onValueChange={handleAssigneeChange}
-            disabled={updateTaskMutation.isPending}
+            disabled={updateTaskMutation.isPending || isLoadingMembers}
           >
             <SelectTrigger>
-              <SelectValue placeholder="Unassigned" />
+              <SelectValue placeholder="Unassigned">
+                {task.assigneeId ? (
+                  <div className="flex items-center gap-2">
+                    {(() => {
+                      const member = members.find((m) => m.userId === task.assigneeId)
+                      return (
+                        <>
+                          <Avatar className="h-4 w-4">
+                            {member?.user?.avatarUrl ? (
+                              <AvatarImage
+                                src={member.user.avatarUrl}
+                                alt={member.user.name || member.user.email}
+                              />
+                            ) : null}
+                            <AvatarFallback className="text-[8px]">
+                              {member?.user?.name?.[0]?.toUpperCase() ||
+                                member?.user?.email?.[0]?.toUpperCase() ||
+                                'U'}
+                            </AvatarFallback>
+                          </Avatar>
+                          <span>
+                            {member?.user?.name || member?.user?.email || 'Unknown User'}
+                          </span>
+                        </>
+                      )
+                    })()}
+                  </div>
+                ) : null}
+              </SelectValue>
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="unassigned">Unassigned</SelectItem>
-              {/* TODO: Fetch project members and populate this list */}
-              <SelectItem value="user1">John Doe</SelectItem>
-              <SelectItem value="user2">Jane Smith</SelectItem>
-              <SelectItem value="user3">Bob Johnson</SelectItem>
+              <SelectItem value="unassigned">
+                <div className="flex items-center gap-2">
+                  <div className="h-4 w-4 rounded-full border border-dashed border-muted-foreground flex items-center justify-center">
+                    <span className="text-[8px] text-muted-foreground">?</span>
+                  </div>
+                  <span className="text-muted-foreground">Unassigned</span>
+                </div>
+              </SelectItem>
+              {isLoadingMembers ? (
+                <div className="px-2 py-4 text-center text-sm text-muted-foreground">
+                  <Loader2 className="h-4 w-4 animate-spin mx-auto" />
+                  <span className="mt-2 block">Loading members...</span>
+                </div>
+              ) : members.length === 0 ? (
+                <div className="px-2 py-4 text-center text-sm text-muted-foreground">
+                  No project members found
+                </div>
+              ) : (
+                members.map((member) => (
+                  <SelectItem key={member.userId} value={member.userId}>
+                    <div className="flex items-center gap-2">
+                      <Avatar className="h-4 w-4">
+                        {member.user?.avatarUrl ? (
+                          <AvatarImage
+                            src={member.user.avatarUrl}
+                            alt={member.user.name || member.user.email}
+                          />
+                        ) : null}
+                        <AvatarFallback className="text-[8px]">
+                          {member.user?.name?.[0]?.toUpperCase() ||
+                            member.user?.email?.[0]?.toUpperCase() ||
+                            'U'}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex flex-col">
+                        <span>{member.user?.name || member.user?.email || 'Unknown User'}</span>
+                        {member.user?.email && member.user.name && (
+                          <span className="text-xs text-muted-foreground">
+                            {member.user.email}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </SelectItem>
+                ))
+              )}
             </SelectContent>
           </Select>
         </div>
