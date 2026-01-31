@@ -47,6 +47,43 @@ export async function fetchTasks(projectId?: string): Promise<Task[]> {
 }
 
 /**
+ * Fetch a single task by ID
+ */
+export async function fetchTask(id: string): Promise<Task> {
+  const supabase = createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+
+  if (!user) {
+    throw new Error('User not authenticated')
+  }
+
+  const { data: task, error } = await supabase
+    .from('tasks')
+    .select('*')
+    .eq('id', id)
+    .eq('user_id', user.id)
+    .single()
+
+  if (error) throw error
+
+  // Convert database snake_case to TypeScript camelCase
+  return {
+    id: task.id,
+    title: task.title,
+    description: task.description,
+    status: task.status as TaskStatus,
+    priority: task.priority as PriorityLevel | undefined,
+    position: task.position,
+    dueDate: task.due_date ? new Date(task.due_date) : undefined,
+    projectId: task.project_id,
+    userId: task.user_id,
+    assigneeId: task.assignee_id,
+    createdAt: new Date(task.created_at),
+    updatedAt: new Date(task.updated_at),
+  } as Task
+}
+
+/**
  * Create a new task
  */
 export async function createTask(
