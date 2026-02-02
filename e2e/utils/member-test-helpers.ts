@@ -60,7 +60,20 @@ export async function createTestProject(
   await projectsPage.goto();
   await projectsPage.openNewProjectDialog();
   await projectFormDialog.createProject(projectName, description);
+
+  // 等待项目出现并完全加载
   await projectsPage.waitForProjectToAppear(projectName);
+
+  // 额外等待以确保项目卡片完全渲染
+  await page.waitForTimeout(1000);
+
+  // 验证项目确实存在
+  const projectExists = await projectsPage.hasProject(projectName);
+  if (!projectExists) {
+    throw new Error(`项目"${projectName}"创建后未在列表中找到`);
+  }
+
+  console.log(`成功创建测试项目: ${projectName}`);
 
   return projectsPage;
 }
@@ -75,28 +88,83 @@ export async function getProjectIdByName(page: Page, projectName: string): Promi
   const projectsPage = new ProjectsPage(page);
   await projectsPage.goto();
 
+  // 等待项目出现
+  await projectsPage.waitForProjectToAppear(projectName);
+
   // 获取项目卡片
-  const projectCard = page.locator(`[data-testid="project-card"]`, {
-    hasText: projectName,
-  });
+  const projectCard = await projectsPage.getProjectCardByName(projectName);
 
-  if (!(await projectCard.isVisible())) {
-    throw new Error(`Project "${projectName}" not found`);
+  // 确保卡片完全可见
+  await projectCard.waitFor({ state: "visible" });
+  await page.waitForTimeout(500); // 额外等待以确保内容加载
+
+  // 尝试从链接元素的href属性获取项目ID（首选方法）
+  const projectCardLink = projectCard.locator('[data-testid="project-card-link"]');
+
+  // 等待链接元素可见
+  if (await projectCardLink.isVisible({ timeout: 3000 })) {
+    const href = await projectCardLink.getAttribute("href");
+    if (href && href.trim() !== "") {
+      const match = href.match(/\/project\/([^\/?#]+)/);
+      if (match && match[1]) {
+        console.log(`成功从href属性获取项目ID: ${match[1]}`);
+        return match[1];
+      }
+    }
+    console.log(`链接元素可见但href属性为空或无效: "${href}"`);
+  } else {
+    console.log(`项目卡片链接元素不可见，使用备选方法`);
   }
 
-  // 从项目卡片获取项目ID
-  const href = await projectCard.getAttribute("href");
-  if (!href) {
-    throw new Error(`Could not get project ID for "${projectName}"`);
-  }
+  // 备选方案：点击项目卡片，从URL获取项目ID，然后返回
+  console.log(`使用点击导航方法获取项目"${projectName}"的ID`);
 
-  // 从URL中提取项目ID
-  const match = href.match(/\/project\/([^\/]+)/);
-  if (!match) {
-    throw new Error(`Invalid project URL: ${href}`);
-  }
+  // 保存当前URL以便返回
+  const originalUrl = page.url();
 
-  return match[1];
+  // 点击项目卡片进入项目详情页
+  try {
+    if (await projectCardLink.isVisible({ timeout: 1000 })) {
+      await projectCardLink.click();
+    } else {
+      // 直接点击卡片
+      await projectCard.click({ force: true });
+    }
+
+    // 等待URL变化到项目详情页
+    await page.waitForURL(/\/project\//, { timeout: 10000, waitUntil: "load" });
+
+    // 从URL中提取项目ID
+    const url = page.url();
+    console.log(`导航到项目详情页URL: ${url}`);
+
+    const projectIdMatch = url.match(/\/project\/([^\/?#]+)/);
+
+    if (!projectIdMatch || !projectIdMatch[1]) {
+      throw new Error(`无法从URL中提取项目ID: ${url}`);
+    }
+
+    const projectId = projectIdMatch[1];
+    console.log(`成功从URL提取项目ID: ${projectId}`);
+
+    // 返回到原始页面（项目列表页）
+    if (originalUrl.includes("/projects")) {
+      await page.goBack({ waitUntil: "load" });
+    } else {
+      await projectsPage.goto();
+    }
+
+    return projectId;
+  } catch (error) {
+    console.error(`获取项目ID时出错:`, error);
+
+    // 尝试恢复状态
+    if (!page.url().includes("/projects")) {
+      await projectsPage.goto();
+    }
+
+    throw new Error(`无法获取项目"${projectName}"的ID: ${error instanceof Error ? error.message : String(error)}`);
+  }
 }
 
 /**
@@ -116,15 +184,30 @@ export async function setupProjectForMemberTest(
 }> {
   const testData = generateTestMemberData(testId);
 
+  console.log(`开始设置成员测试环境，测试ID: ${testId}`);
+  console.log(`项目名称: ${testData.project.name}`);
+
   // 创建测试项目
+  console.log(`创建测试项目...`);
   await createTestProject(page, testData.project.name, testData.project.description);
 
   // 获取项目ID
+  console.log(`获取项目ID...`);
   const projectId = await getProjectIdByName(page, testData.project.name);
+  console.log(`成功获取项目ID: ${projectId}`);
 
   // 导航到项目详情页
+  console.log(`导航到项目详情页...`);
   const projectDetailPage = new ProjectDetailPage(page);
   await projectDetailPage.goto(projectId);
+
+  // 验证项目详情页加载成功
+  const projectTitle = await projectDetailPage.getProjectTitle();
+  console.log(`项目详情页加载成功，标题: ${projectTitle}`);
+
+  if (!projectTitle.includes(testData.project.name)) {
+    console.warn(`项目标题不匹配，期望包含"${testData.project.name}"，实际:"${projectTitle}"`);
+  }
 
   return {
     projectId,
