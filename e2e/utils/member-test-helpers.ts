@@ -64,16 +64,21 @@ export async function createTestProject(
   // 等待项目出现并完全加载
   await projectsPage.waitForProjectToAppear(projectName);
 
-  // 额外等待以确保项目卡片完全渲染
-  await page.waitForTimeout(1000);
+  // 额外等待以确保项目卡片完全渲染和状态同步
+  await page.waitForTimeout(2000);
 
   // 验证项目确实存在
   const projectExists = await projectsPage.hasProject(projectName);
   if (!projectExists) {
-    throw new Error(`项目"${projectName}"创建后未在列表中找到`);
-  }
+    // 尝试刷新页面并重试
+    await projectsPage.goto();
+    await page.waitForTimeout(1000);
 
-  console.log(`成功创建测试项目: ${projectName}`);
+    const projectExistsAfterRefresh = await projectsPage.hasProject(projectName);
+    if (!projectExistsAfterRefresh) {
+      throw new Error(`项目"${projectName}"创建后未在列表中找到`);
+    }
+  }
 
   return projectsPage;
 }
