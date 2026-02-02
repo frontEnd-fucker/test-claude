@@ -29,14 +29,15 @@ interface MembersListProps {
   members: ProjectMember[]
   currentUserMember: ProjectMember | null
   compact?: boolean
+  isOwner?: boolean
 }
 
-export default function MembersList({ members, currentUserMember, compact = false }: MembersListProps) {
+export default function MembersList({ members, currentUserMember, compact = false, isOwner = false }: MembersListProps) {
   const removeMemberMutation = useRemoveProjectMember()
   const updateMemberMutation = useUpdateProjectMember()
   const [editingMemberId, setEditingMemberId] = useState<string | null>(null)
 
-  const canManage = canManageMembers(currentUserMember)
+  const canManage = isOwner || canManageMembers(currentUserMember)
 
   const handleRoleChange = (memberId: string, newRole: ProjectMember['role']) => {
     updateMemberMutation.mutate(

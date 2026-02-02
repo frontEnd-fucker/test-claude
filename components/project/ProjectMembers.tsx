@@ -9,6 +9,7 @@ import AddMemberDialog from '@/components/project/AddMemberDialog'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { UserPlus, Loader2 } from 'lucide-react'
+import { useProject } from '@/lib/queries/projects'
 
 interface ProjectMembersProps {
   projectId: string
@@ -18,6 +19,7 @@ interface ProjectMembersProps {
 export default function ProjectMembers({ projectId, compact = false }: ProjectMembersProps) {
   const { data: members = [], isLoading: isLoadingMembers } = useProjectMembers(projectId)
   const { data: currentUser, isLoading: isLoadingUser } = useCurrentUser()
+  const { data: project, isLoading: isLoadingProject } = useProject(projectId)
 
   const { data: currentUserMember, isLoading: isLoadingMember } = useProjectMemberByUserId(
     projectId,
@@ -26,8 +28,9 @@ export default function ProjectMembers({ projectId, compact = false }: ProjectMe
 
   const currentUserMemberOrNull = currentUserMember || null
 
-  const isLoading = isLoadingMembers || isLoadingUser || isLoadingMember
-  const canManage = canManageMembers(currentUserMemberOrNull)
+  const isLoading = isLoadingMembers || isLoadingUser || isLoadingMember || isLoadingProject
+  const isOwner = project?.userId === currentUser?.id
+  const canManage = isOwner || canManageMembers(currentUserMemberOrNull)
 
   if (isLoading) {
     if (compact) {
@@ -87,6 +90,7 @@ export default function ProjectMembers({ projectId, compact = false }: ProjectMe
           members={members}
           currentUserMember={currentUserMemberOrNull}
           compact={true}
+          isOwner={isOwner}
         />
       </div>
     )
@@ -133,6 +137,7 @@ export default function ProjectMembers({ projectId, compact = false }: ProjectMe
           members={members}
           currentUserMember={currentUserMemberOrNull}
           compact={false}
+          isOwner={isOwner}
         />
       )}
     </div>
