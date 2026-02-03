@@ -25,81 +25,88 @@ test.describe("项目成员管理E2E测试", () => {
     }
   });
 
-  test("成功添加新成员（通过邮箱邀请）", async ({ loggedInPage }) => {
-    const testId = generateTestId("add-member");
-    const testData = generateTestMemberData(testId);
+  test(
+    "成功添加新成员（通过邮箱邀请）",
+    { tag: "@smoke" },
+    async ({ loggedInPage }) => {
+      const testId = generateTestId("add-member");
+      const testData = generateTestMemberData(testId);
 
-    let projectId: string;
-    let projectDetailPage: ProjectDetailPage;
-    let addMemberDialog: AddMemberDialog;
+      let projectId: string;
+      let projectDetailPage: ProjectDetailPage;
+      let addMemberDialog: AddMemberDialog;
 
-    await test.step("设置测试环境", async () => {
-      const setupResult = await setupProjectForMemberTest(loggedInPage, testId);
-      projectId = setupResult.projectId;
-      projectDetailPage = setupResult.projectDetailPage;
-    });
+      await test.step("设置测试环境", async () => {
+        const setupResult = await setupProjectForMemberTest(
+          loggedInPage,
+          testId
+        );
+        projectId = setupResult.projectId;
+        projectDetailPage = setupResult.projectDetailPage;
+      });
 
-    await test.step("验证初始状态", async () => {
-      // 验证项目详情页加载成功
-      const projectTitle = await projectDetailPage.getProjectTitle();
-      expect(projectTitle).toBe(testData.project.name);
+      await test.step("验证初始状态", async () => {
+        // 验证项目详情页加载成功
+        const projectTitle = await projectDetailPage.getProjectTitle();
+        expect(projectTitle).toBe(testData.project.name);
 
-      // 验证初始成员数量（应该只有项目所有者）
-      const initialCount = await projectDetailPage.getMemberCount();
-      expect(initialCount).toBe(1); // 只有项目所有者
+        // 验证初始成员数量（应该只有项目所有者）
+        const initialCount = await projectDetailPage.getMemberCount();
+        expect(initialCount).toBe(1); // 只有项目所有者
 
-      // 验证添加成员按钮可见
-      const hasAddButton = await projectDetailPage.hasAddMemberButton();
-      expect(hasAddButton).toBe(true);
-    });
+        // 验证添加成员按钮可见
+        const hasAddButton = await projectDetailPage.hasAddMemberButton();
+        expect(hasAddButton).toBe(true);
+      });
 
-    await test.step("打开添加成员对话框", async () => {
-      addMemberDialog = await projectDetailPage.openAddMemberDialog();
+      await test.step("打开添加成员对话框", async () => {
+        addMemberDialog = await projectDetailPage.openAddMemberDialog();
 
-      // 验证对话框打开
-      const dialogTitle = await addMemberDialog.getDialogTitle();
-      expect(dialogTitle).toMatch(/Add Member|Invite Member/i);
-    });
+        // 验证对话框打开
+        const dialogTitle = await addMemberDialog.getDialogTitle();
+        expect(dialogTitle).toMatch(/Add Member|Invite Member/i);
+      });
 
-    await test.step("填写成员信息并添加", async () => {
-      const memberEmail = getTestMemberEmail();
+      await test.step("填写成员信息并添加", async () => {
+        const memberEmail = getTestMemberEmail();
 
-      // 填写邮箱
-      await addMemberDialog.fillEmail(memberEmail);
+        // 填写邮箱
+        await addMemberDialog.fillEmail(memberEmail);
 
-      // 选择角色（可选，默认为member）
-      await addMemberDialog.selectRole("member");
+        // 选择角色（可选，默认为member）
+        await addMemberDialog.selectRole("member");
 
-      // 点击添加按钮
-      await addMemberDialog.addButton.click();
+        // 点击添加按钮
+        await addMemberDialog.addButton.click();
 
-      // 等待操作完成
-      await loggedInPage.waitForTimeout(1000);
-    });
+        // 等待操作完成
+        await loggedInPage.waitForTimeout(1000);
+      });
 
-    await test.step("验证添加成功", async () => {
-      // 验证成功消息（如果显示）
-      if (await addMemberDialog.hasSuccessMessage()) {
-        const successMessage = await addMemberDialog.getSuccessMessage();
-        expect(successMessage).toMatch(/successfully|added/i);
-      }
+      await test.step("验证添加成功", async () => {
+        // 验证成功消息（如果显示）
+        if (await addMemberDialog.hasSuccessMessage()) {
+          const successMessage = await addMemberDialog.getSuccessMessage();
+          expect(successMessage).toMatch(/successfully|added/i);
+        }
 
-      // 验证对话框关闭
-      await addMemberDialog.waitForClose();
+        // 验证对话框关闭
+        await addMemberDialog.waitForClose();
 
-      // 验证成员添加成功
-      const memberEmail = getTestMemberEmail();
-      await verifyMemberAdded(projectDetailPage, memberEmail);
+        // 验证成员添加成功
+        const memberEmail = getTestMemberEmail();
+        await verifyMemberAdded(projectDetailPage, memberEmail);
 
-      // 验证成员数量增加
-      const newCount = await projectDetailPage.getMemberCount();
-      expect(newCount).toBe(2); // 项目所有者 + 新成员
-    });
+        // 验证成员数量增加
+        const newCount = await projectDetailPage.getMemberCount();
+        expect(newCount).toBe(2); // 项目所有者 + 新成员
+      });
 
-    await test.step("清理测试数据", async () => {
-      await cleanupMemberTestData(loggedInPage, testData.project.name);
-    });
-  });
+      await test.step("清理测试数据", async () => {
+        await cleanupMemberTestData(loggedInPage, testData.project.name);
+      });
+    }
+  );
 
   test("成功删除成员", async ({ loggedInPage }) => {
     const testId = generateTestId("remove-member");
@@ -120,7 +127,12 @@ test.describe("项目成员管理E2E测试", () => {
 
       // 添加测试成员
       const memberEmail = getTestMemberEmail();
-      await addTestMemberToProject(loggedInPage, projectId, memberEmail, "member");
+      await addTestMemberToProject(
+        loggedInPage,
+        projectId,
+        memberEmail,
+        "member"
+      );
 
       // 验证成员已添加
       await verifyMemberAdded(projectDetailPage, memberEmail);
@@ -197,7 +209,12 @@ test.describe("项目成员管理E2E测试", () => {
       const memberEmail = getTestMemberEmail();
 
       // 添加成员
-      await addTestMemberToProject(loggedInPage, projectId, memberEmail, "member");
+      await addTestMemberToProject(
+        loggedInPage,
+        projectId,
+        memberEmail,
+        "member"
+      );
 
       // 验证添加成功
       await verifyMemberAdded(projectDetailPage, memberEmail);
@@ -225,7 +242,12 @@ test.describe("项目成员管理E2E测试", () => {
       const memberEmail = getTestMemberEmail();
 
       // 重新添加成员
-      await addTestMemberToProject(loggedInPage, projectId, memberEmail, "member");
+      await addTestMemberToProject(
+        loggedInPage,
+        projectId,
+        memberEmail,
+        "member"
+      );
 
       // 验证重新添加成功
       await verifyMemberAdded(projectDetailPage, memberEmail);

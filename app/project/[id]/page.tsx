@@ -1,24 +1,29 @@
-'use client'
+"use client";
 
-import { useParams, notFound } from 'next/navigation'
-import Link from 'next/link'
-import { ChevronRight, Loader2 } from 'lucide-react'
+import { useParams, notFound } from "next/navigation";
+import Link from "next/link";
+import { ChevronRight, Loader2 } from "lucide-react";
 
-import { useProject, useProjectStats } from '@/lib/queries/projects'
-import KanbanBoard from '@/components/kanban/Board'
-import TodoList from '@/components/sidebar/TodoList'
-import NotesEditor from '@/components/notes/NotesEditor'
-import ProjectMembers from '@/components/project/ProjectMembers'
-import { AuthGuard } from '@/components/auth/AuthGuard'
-import { Skeleton, CardSkeleton, ListSkeleton, BoardSkeleton, MinimalSkeleton } from '@/components/ui/skeleton/index'
+import { useProject, useProjectStats } from "@/lib/queries/projects";
+import KanbanBoard from "@/components/kanban/Board";
+import TodoList from "@/components/sidebar/TodoList";
+import NotesEditor from "@/components/notes/NotesEditor";
+import ProjectMembers from "@/components/project/ProjectMembers";
+import { AuthGuard } from "@/components/auth/AuthGuard";
+import {
+  Skeleton,
+  CardSkeleton,
+  ListSkeleton,
+  BoardSkeleton,
+  MinimalSkeleton,
+} from "@/components/ui/skeleton/index";
 
 export default function ProjectDetailPage() {
-  const params = useParams()
-  const projectId = params.id as string
+  const params = useParams();
+  const projectId = params.id as string;
 
-  const { data: project, isLoading, error } = useProject(projectId)
-  const { data: stats, isLoading: statsLoading } = useProjectStats(projectId)
-
+  const { data: project, isLoading, error } = useProject(projectId);
+  const { data: stats, isLoading: statsLoading } = useProjectStats(projectId);
 
   if (isLoading) {
     return (
@@ -41,7 +46,11 @@ export default function ProjectDetailPage() {
                 <Skeleton className="h-7 w-32" />
                 <Skeleton className="h-5 w-48" />
               </div>
-              <BoardSkeleton columnCount={3} taskCountPerColumn={2} showHeader={false} />
+              <BoardSkeleton
+                columnCount={3}
+                taskCountPerColumn={2}
+                showHeader={false}
+              />
             </div>
           </div>
 
@@ -51,11 +60,11 @@ export default function ProjectDetailPage() {
           </div>
         </div>
       </div>
-    )
+    );
   }
 
   if (error || !project) {
-    notFound()
+    notFound();
   }
 
   return (
@@ -65,7 +74,10 @@ export default function ProjectDetailPage() {
         <div className="rounded-xl border bg-card p-4 shadow-sm">
           <div className="flex flex-col gap-3">
             {/* Breadcrumb navigation */}
-            <nav className="flex items-center text-sm text-muted-foreground" aria-label="Breadcrumb">
+            <nav
+              className="flex items-center text-sm text-muted-foreground"
+              aria-label="Breadcrumb"
+            >
               <Link
                 href="/projects"
                 className="hover:text-foreground transition-colors hover:underline"
@@ -73,7 +85,11 @@ export default function ProjectDetailPage() {
                 Projects
               </Link>
               <ChevronRight className="h-3 w-3 mx-2" />
-              <span className="text-foreground font-medium truncate" aria-current="page">
+              <span
+                data-testid="project-title"
+                className="text-foreground font-medium truncate"
+                aria-current="page"
+              >
                 {project.name}
               </span>
             </nav>
@@ -81,7 +97,9 @@ export default function ProjectDetailPage() {
             <div>
               <h1 className="text-2xl font-bold">{project.name}</h1>
               {project.description && (
-                <p className="mt-1 text-sm text-muted-foreground">{project.description}</p>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  {project.description}
+                </p>
               )}
             </div>
 
@@ -136,5 +154,5 @@ export default function ProjectDetailPage() {
         </div>
       </div>
     </AuthGuard>
-  )
+  );
 }

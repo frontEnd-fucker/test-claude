@@ -1,12 +1,19 @@
-'use client'
+"use client";
 
-import { useState } from 'react'
-import { ProjectMember } from '@/types/database'
-import { useRemoveProjectMember, useUpdateProjectMember } from '@/lib/queries/members/useProjectMembers'
-import { canManageMembers, getRoleDisplayName, getRoleColor } from '@/lib/permissions/project'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
+import { useState } from "react";
+import { ProjectMember } from "@/types/database";
+import {
+  useRemoveProjectMember,
+  useUpdateProjectMember,
+} from "@/lib/queries/members/useProjectMembers";
+import {
+  canManageMembers,
+  getRoleDisplayName,
+  getRoleColor,
+} from "@/lib/permissions/project";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,47 +21,55 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
+} from "@/components/ui/dropdown-menu";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select'
-import { MoreVertical, UserMinus, UserCog, Loader2 } from 'lucide-react'
-import { cn } from '@/lib/utils'
+} from "@/components/ui/select";
+import { MoreVertical, UserMinus, UserCog, Loader2 } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface MembersListProps {
-  members: ProjectMember[]
-  currentUserMember: ProjectMember | null
-  compact?: boolean
-  isOwner?: boolean
+  members: ProjectMember[];
+  currentUserMember: ProjectMember | null;
+  compact?: boolean;
+  isOwner?: boolean;
 }
 
-export default function MembersList({ members, currentUserMember, compact = false, isOwner = false }: MembersListProps) {
-  const removeMemberMutation = useRemoveProjectMember()
-  const updateMemberMutation = useUpdateProjectMember()
-  const [editingMemberId, setEditingMemberId] = useState<string | null>(null)
+export default function MembersList({
+  members,
+  currentUserMember,
+  compact = false,
+  isOwner = false,
+}: MembersListProps) {
+  const removeMemberMutation = useRemoveProjectMember();
+  const updateMemberMutation = useUpdateProjectMember();
+  const [editingMemberId, setEditingMemberId] = useState<string | null>(null);
 
-  const canManage = isOwner || canManageMembers(currentUserMember)
+  const canManage = isOwner || canManageMembers(currentUserMember);
 
-  const handleRoleChange = (memberId: string, newRole: ProjectMember['role']) => {
+  const handleRoleChange = (
+    memberId: string,
+    newRole: ProjectMember["role"]
+  ) => {
     updateMemberMutation.mutate(
       { memberId, updates: { role: newRole } },
       {
         onSuccess: () => {
-          setEditingMemberId(null)
+          setEditingMemberId(null);
         },
       }
-    )
-  }
+    );
+  };
 
   const handleRemoveMember = (memberId: string) => {
-    if (window.confirm('Are you sure you want to remove this member?')) {
-      removeMemberMutation.mutate(memberId)
+    if (window.confirm("Are you sure you want to remove this member?")) {
+      removeMemberMutation.mutate(memberId);
     }
-  }
+  };
 
   if (compact) {
     return (
@@ -67,16 +82,21 @@ export default function MembersList({ members, currentUserMember, compact = fals
             <div key={member.id} className="relative group">
               <Avatar className="h-8 w-8 border-2 border-background">
                 {member.user?.avatarUrl ? (
-                  <AvatarImage src={member.user.avatarUrl} alt={member.user.name || member.user.email} />
+                  <AvatarImage
+                    src={member.user.avatarUrl}
+                    alt={member.user.name || member.user.email}
+                  />
                 ) : null}
                 <AvatarFallback className="text-xs">
-                  {member.user?.name?.[0]?.toUpperCase() || member.user?.email?.[0]?.toUpperCase() || 'U'}
+                  {member.user?.name?.[0]?.toUpperCase() ||
+                    member.user?.email?.[0]?.toUpperCase() ||
+                    "U"}
                 </AvatarFallback>
               </Avatar>
               <div className="absolute -bottom-1 -right-1">
                 <Badge
                   className={cn(
-                    'h-3 w-3 p-0 text-[8px] flex items-center justify-center',
+                    "h-3 w-3 p-0 text-[8px] flex items-center justify-center",
                     getRoleColor(member.role)
                   )}
                   title={getRoleDisplayName(member.role)}
@@ -88,13 +108,15 @@ export default function MembersList({ members, currentUserMember, compact = fals
           ))}
         </div>
       </div>
-    )
+    );
   }
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold">Project Members ({members.length})</h3>
+        <h3 className="text-lg font-semibold">
+          Project Members ({members.length})
+        </h3>
       </div>
 
       <div className="space-y-3">
@@ -106,18 +128,25 @@ export default function MembersList({ members, currentUserMember, compact = fals
             <div className="flex items-center gap-3">
               <Avatar>
                 {member.user?.avatarUrl ? (
-                  <AvatarImage src={member.user.avatarUrl} alt={member.user.name || member.user.email} />
+                  <AvatarImage
+                    src={member.user.avatarUrl}
+                    alt={member.user.name || member.user.email}
+                  />
                 ) : null}
                 <AvatarFallback>
-                  {member.user?.name?.[0]?.toUpperCase() || member.user?.email?.[0]?.toUpperCase() || 'U'}
+                  {member.user?.name?.[0]?.toUpperCase() ||
+                    member.user?.email?.[0]?.toUpperCase() ||
+                    "U"}
                 </AvatarFallback>
               </Avatar>
               <div>
                 <p className="font-medium">
-                  {member.user?.name || member.user?.email || 'Unknown User'}
+                  {member.user?.name || member.user?.email || "Unknown User"}
                 </p>
                 <p className="text-sm text-muted-foreground">
-                  {member.user?.email && member.user.name ? member.user.email : ''}
+                  {member.user?.email && member.user.name
+                    ? member.user.email
+                    : ""}
                 </p>
               </div>
             </div>
@@ -127,7 +156,7 @@ export default function MembersList({ members, currentUserMember, compact = fals
                 <div className="flex items-center gap-2">
                   <Select
                     value={member.role}
-                    onValueChange={(value: ProjectMember['role']) =>
+                    onValueChange={(value: ProjectMember["role"]) =>
                       handleRoleChange(member.id, value)
                     }
                     disabled={updateMemberMutation.isPending}
@@ -157,7 +186,7 @@ export default function MembersList({ members, currentUserMember, compact = fals
                 </Badge>
               )}
 
-              {canManage && member.role !== 'owner' && (
+              {canManage && member.role !== "owner" && (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="ghost" size="icon" className="h-8 w-8">
@@ -197,5 +226,5 @@ export default function MembersList({ members, currentUserMember, compact = fals
         </div>
       )}
     </div>
-  )
+  );
 }

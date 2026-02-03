@@ -7,25 +7,42 @@ import { User } from '@/types/database'
 export async function searchUsers(query: string): Promise<User[]> {
   const supabase = createClient()
 
-  // Search in auth.users metadata (name) and email
   const { data: { user: currentUser } } = await supabase.auth.getUser()
 
   if (!currentUser) {
     throw new Error('User not authenticated')
   }
 
-  // Note: Supabase Auth doesn't have a direct search API for users
-  // In a real app, you might need to create a public.users table
-  // or use a different approach. For now, we'll return an empty array.
+  // Search in public.profiles table
+  if (query.length < 2) {
+    return [] // Require at least 2 characters for search
+  }
 
-  // TODO: Implement proper user search
-  // This could involve:
-  // 1. Creating a public.users table that syncs with auth.users
-  // 2. Using a function to search users by email/name
-  // 3. Implementing an admin-only search endpoint
+  const searchQuery = `%${query}%`
 
-  console.warn('User search not fully implemented. Returning empty array.')
-  return []
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('*')
+    .or(`email.ilike.${searchQuery},name.ilike.${searchQuery}`)
+    .limit(10)
+
+  if (error) {
+    console.warn('Error searching users:', error.message)
+    return []
+  }
+
+  if (!data) {
+    return []
+  }
+
+  return data.map(profile => ({
+    id: profile.id,
+    email: profile.email,
+    name: profile.name || undefined,
+    avatarUrl: profile.avatar_url || undefined,
+    createdAt: new Date(profile.created_at),
+    updatedAt: new Date(profile.updated_at),
+  }))
 }
 
 /**
@@ -35,28 +52,69 @@ export async function getUserById(userId: string): Promise<User | null> {
   const supabase = createClient()
 
   try {
-    // Try to get user from auth.users (admin only)
-    const { data, error } = await supabase.auth.admin.getUserById(userId)
+    // Get user from public.profiles table
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', userId)
+      .maybeSingle()
 
     if (error) {
-      console.warn('Could not fetch user from auth:', error.message)
+      console.warn('Error fetching user by ID from profiles:', error.message)
       return null
     }
 
-    if (!data || !data.user) {
+    if (!data) {
       return null
     }
 
-    const user = data.user
     return {
-      id: user.id,
-      email: user.email || '',
-      name: user.user_metadata?.name || undefined,
-      createdAt: new Date(user.created_at),
-      updatedAt: new Date(user.updated_at || user.created_at),
+      id: data.id,
+      email: data.email,
+      name: data.name || undefined,
+      avatarUrl: data.avatar_url || undefined,
+      createdAt: new Date(data.created_at),
+      updatedAt: new Date(data.updated_at),
     }
   } catch (error) {
     console.warn('Error fetching user:', error)
+    return null
+  }
+}
+
+/**
+ * Get user by email
+ */
+export async function getUserByEmail(email: string): Promise<User | null> {
+  const supabase = createClient()
+
+  try {
+    // Search in public.profiles table
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('email', email.toLowerCase().trim())
+      .maybeSingle()
+
+    if (error) {
+      console.warn('Error fetching user by email from profiles:', error.message)
+      return null
+    }
+
+    if (!data) {
+      return null
+    }
+
+    return {
+      id: data.id,
+      email: data.email,
+      name: data.name || undefined,
+      avatarUrl: data.avatar_url || undefined,
+      createdAt: new Date(data.created_at),
+      updatedAt: new Date(data.updated_at),
+    }
+  } catch (error) {
+    console.warn('Error fetching user by email:', error)
     return null
   }
 }
@@ -66,17 +124,42 @@ export async function getUserById(userId: string): Promise<User | null> {
  */
 export async function getUsersByIds(userIds: string[]): Promise<User[]> {
   const supabase = createClient()
-  const users: User[] = []
 
-  // Fetch users one by one (batch fetching not available in client)
-  for (const userId of userIds) {
-    const user = await getUserById(userId)
-    if (user) {
-      users.push(user)
-    }
+  if (userIds.length === 0) {
+    return []
   }
 
-  return users
+  // Use IN clause for batch fetching
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('*')
+    .in('id', userIds)
+
+  if (error) {
+    console.warn('Error fetching users by IDs:', error.message)
+    // Fallback to individual fetching
+    const users: User[] = []
+    for (const userId of userIds) {
+      const user = await getUserById(userId)
+      if (user) {
+        users.push(user)
+      }
+    }
+    return users
+  }
+
+  if (!data) {
+    return []
+  }
+
+  return data.map(profile => ({
+    id: profile.id,
+    email: profile.email,
+    name: profile.name || undefined,
+    avatarUrl: profile.avatar_url || undefined,
+    createdAt: new Date(profile.created_at),
+    updatedAt: new Date(profile.updated_at),
+  }))
 }
 
 /**

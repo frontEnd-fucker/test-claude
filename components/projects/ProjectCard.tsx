@@ -78,6 +78,7 @@ export default function ProjectCard({ project }: ProjectCardProps) {
         href={`/project/${project.id}`}
         className="absolute inset-0 z-10 rounded-lg transition-colors duration-200 hover:bg-accent/5"
         aria-label={`Open project ${project.name}`}
+        data-testid="project-card-link"
       />
       <div className="relative flex items-start justify-between">
         <div className="flex-1">

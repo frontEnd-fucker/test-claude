@@ -163,7 +163,10 @@ export async function updateTask(
   if (updates.position !== undefined) dbUpdates.position = updates.position
   if (updates.dueDate !== undefined) dbUpdates.due_date = updates.dueDate?.toISOString()
   if (updates.projectId !== undefined) dbUpdates.project_id = updates.projectId
-  if (updates.assigneeId !== undefined) dbUpdates.assignee_id = updates.assigneeId
+  if (updates.assigneeId !== undefined) {
+    // Convert undefined to null for Supabase
+    dbUpdates.assignee_id = updates.assigneeId === undefined ? null : updates.assigneeId
+  }
 
   dbUpdates.updated_at = new Date().toISOString()
 

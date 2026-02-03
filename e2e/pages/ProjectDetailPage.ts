@@ -17,25 +17,37 @@ export class ProjectDetailPage {
     this.page = page;
 
     // 项目头部定位器
-    this.projectHeader = page.locator('div[class*="rounded-xl border bg-card"]').first();
-    this.projectTitle = page.getByRole("heading", { name: /^[^$]/ }).first(); // 第一个标题
-    this.projectDescription = page.locator('p.text-muted-foreground').first();
+    this.projectHeader = page
+      .locator('div[class*="rounded-xl border bg-card"]')
+      .first();
+    // this.projectTitle = page.getByRole("heading", { name: /^[^$]/ }).first(); // 第一个标题
+    this.projectTitle = page.getByTestId("project-title");
+    this.projectDescription = page.locator("p.text-muted-foreground").first();
 
     // 成员区域定位器
     this.membersSection = page.locator('div[class*="mt-4 pt-4 border-t"]');
-    this.membersCount = page.locator('h3.text-sm.font-medium').or(
-      page.locator('text=/Members \\(\\d+\\)/')
-    );
-    this.membersList = page.locator('div.flex.flex-wrap.gap-2').or(
-      page.locator('div.space-y-3')
-    );
-    this.memberItems = page.locator('[data-testid="member-item"]').or(
-      page.locator('div.relative.group').or(
-        page.locator('div.flex.items-center.justify-between.rounded-lg.border.p-3')
-      )
-    );
-    this.addMemberButton = page.getByRole("button", { name: /Add Member|Add First Member/i });
-    this.noMembersMessage = page.locator('text=No members yet');
+
+    this.membersCount = this.membersSection
+      .locator("h3.text-sm.font-medium")
+      .or(page.locator("text=/Members \\(\\d+\\)/"));
+    this.membersList = page
+      .locator("div.flex.flex-wrap.gap-2")
+      .or(page.locator("div.space-y-3"));
+    this.memberItems = page
+      .locator('[data-testid="member-item"]')
+      .or(
+        page
+          .locator("div.relative.group")
+          .or(
+            page.locator(
+              "div.flex.items-center.justify-between.rounded-lg.border.p-3"
+            )
+          )
+      );
+    this.addMemberButton = page.getByRole("button", {
+      name: /Add Member|Add First Member/i,
+    });
+    this.noMembersMessage = page.locator("text=No members yet");
   }
 
   /**
@@ -112,9 +124,9 @@ export class ProjectDetailPage {
       const memberItem = this.memberItems.nth(i);
 
       // 尝试获取成员名称
-      const nameLocator = memberItem.locator('p.font-medium').or(
-        memberItem.locator('div[class*="text-sm"]')
-      );
+      const nameLocator = memberItem
+        .locator("p.font-medium")
+        .or(memberItem.locator('div[class*="text-sm"]'));
 
       if (await nameLocator.isVisible()) {
         const name = await nameLocator.textContent();
@@ -123,7 +135,9 @@ export class ProjectDetailPage {
         }
       } else {
         // 对于紧凑模式，可能只有头像
-        const avatarFallback = memberItem.locator('span[class*="AvatarFallback"]');
+        const avatarFallback = memberItem.locator(
+          'span[class*="AvatarFallback"]'
+        );
         if (await avatarFallback.isVisible()) {
           const initial = await avatarFallback.textContent();
           if (initial) {
@@ -148,7 +162,9 @@ export class ProjectDetailPage {
       const memberItem = this.memberItems.nth(i);
 
       // 尝试获取成员邮箱
-      const emailLocator = memberItem.locator('p.text-sm.text-muted-foreground');
+      const emailLocator = memberItem.locator(
+        "p.text-sm.text-muted-foreground"
+      );
 
       if (await emailLocator.isVisible()) {
         const email = await emailLocator.textContent();
@@ -168,7 +184,7 @@ export class ProjectDetailPage {
    */
   async hasMember(email: string): Promise<boolean> {
     const emails = await this.getMemberEmails();
-    return emails.some(e => e.toLowerCase().includes(email.toLowerCase()));
+    return emails.some((e) => e.toLowerCase().includes(email.toLowerCase()));
   }
 
   /**
@@ -178,7 +194,7 @@ export class ProjectDetailPage {
    */
   async hasMemberByName(name: string): Promise<boolean> {
     const names = await this.getMemberNames();
-    return names.some(n => n.toLowerCase().includes(name.toLowerCase()));
+    return names.some((n) => n.toLowerCase().includes(name.toLowerCase()));
   }
 
   /**
@@ -208,21 +224,30 @@ export class ProjectDetailPage {
       const memberItem = this.memberItems.nth(i);
 
       // 检查这个成员项是否包含目标邮箱
-      const emailLocator = memberItem.locator('p.text-sm.text-muted-foreground');
+      const emailLocator = memberItem.locator(
+        "p.text-sm.text-muted-foreground"
+      );
       if (await emailLocator.isVisible()) {
         const memberEmail = await emailLocator.textContent();
-        if (memberEmail && memberEmail.toLowerCase().includes(email.toLowerCase())) {
+        if (
+          memberEmail &&
+          memberEmail.toLowerCase().includes(email.toLowerCase())
+        ) {
           // 找到目标成员，打开操作菜单
-          const moreButton = memberItem.getByRole("button", { name: /More|Actions/i }).or(
-            memberItem.locator('button[aria-label*="menu"]').or(
-              memberItem.locator('button:has(svg[aria-label*="more"])')
-            )
-          );
+          const moreButton = memberItem
+            .getByRole("button", { name: /More|Actions/i })
+            .or(
+              memberItem
+                .locator('button[aria-label*="menu"]')
+                .or(memberItem.locator('button:has(svg[aria-label*="more"])'))
+            );
 
           await moreButton.click();
 
           // 点击"Remove Member"选项
-          const removeOption = this.page.getByRole("menuitem", { name: /Remove Member/i });
+          const removeOption = this.page.getByRole("menuitem", {
+            name: /Remove Member/i,
+          });
           await removeOption.click();
 
           // 处理确认对话框
@@ -243,11 +268,13 @@ export class ProjectDetailPage {
    */
   private async handleRemoveConfirmation(): Promise<void> {
     // 检查是否有确认对话框
-    const confirmDialog = this.page.locator('text=/Are you sure|Confirm/i');
+    const confirmDialog = this.page.locator("text=/Are you sure|Confirm/i");
 
     if (await confirmDialog.isVisible()) {
       // 点击确认按钮
-      const confirmButton = this.page.getByRole("button", { name: /Confirm|OK|Yes/i });
+      const confirmButton = this.page.getByRole("button", {
+        name: /Confirm|OK|Yes/i,
+      });
       await confirmButton.click();
 
       // 等待确认对话框消失
@@ -287,7 +314,10 @@ export class ProjectDetailPage {
    * @param expectedCount 期望的成员数量
    * @param timeout 超时时间（毫秒）
    */
-  async waitForMemberCount(expectedCount: number, timeout = 5000): Promise<void> {
+  async waitForMemberCount(
+    expectedCount: number,
+    timeout = 5000
+  ): Promise<void> {
     await expect(async () => {
       const count = await this.getMemberCount();
       expect(count).toBe(expectedCount);

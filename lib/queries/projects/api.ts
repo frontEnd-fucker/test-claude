@@ -174,7 +174,7 @@ export async function fetchProject(id: string): Promise<Project> {
     .from('projects')
     .select('*')
     .eq('id', id)
-    .eq('user_id', user.id) // Ensure user can only access their own projects
+    // RLS policy ensures user can only access projects they belong to
     .single()
 
   if (error) throw error
