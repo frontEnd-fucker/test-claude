@@ -152,6 +152,7 @@ export async function updateTask(
   id: string,
   updates: Partial<Omit<Task, 'id' | 'userId' | 'createdAt' | 'updatedAt'>>
 ): Promise<Task> {
+  console.log('updateTask API called:', { id, updates })
   const supabase = createClient()
 
   // Convert camelCase to snake_case for database fields
@@ -166,9 +167,12 @@ export async function updateTask(
   if (updates.assigneeId !== undefined) {
     // Convert undefined to null for Supabase
     dbUpdates.assignee_id = updates.assigneeId === undefined ? null : updates.assigneeId
+    console.log('Assignee update:', { assigneeId: updates.assigneeId, db_assignee_id: dbUpdates.assignee_id })
   }
 
   dbUpdates.updated_at = new Date().toISOString()
+
+  console.log('Database updates to apply:', dbUpdates)
 
   const { data: updatedTask, error } = await supabase
     .from('tasks')
@@ -177,7 +181,12 @@ export async function updateTask(
     .select()
     .single()
 
-  if (error) throw error
+  if (error) {
+    console.error('Supabase update error:', error)
+    throw error
+  }
+
+  console.log('Task update successful:', { id: updatedTask.id, assignee_id: updatedTask.assignee_id })
 
   // Convert database snake_case to TypeScript camelCase
   return {

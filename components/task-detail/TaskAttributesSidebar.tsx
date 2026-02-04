@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import React, { useState } from 'react'
 import { Task } from '@/types'
 import { useUpdateTask } from '@/lib/queries/tasks'
 import { useProjectMembers } from '@/lib/queries/members/useProjectMembers'
@@ -11,6 +11,7 @@ import { Label } from '@/components/ui/label'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Calendar, User, Flag, Loader2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { toast } from 'sonner'
 
 interface TaskAttributesSidebarProps {
   task: Task
@@ -23,7 +24,20 @@ export default function TaskAttributesSidebar({ task, projectId }: TaskAttribute
     task.dueDate ? task.dueDate.toISOString().split('T')[0] : ''
   )
 
-  const { data: members = [], isLoading: isLoadingMembers } = useProjectMembers(projectId)
+  const { data: members = [], isLoading: isLoadingMembers, error: membersError } = useProjectMembers(projectId)
+
+  // Debug logging for members query
+  React.useEffect(() => {
+    if (membersError) {
+      console.error('Error fetching project members:', membersError)
+    }
+    if (members.length > 0) {
+      console.log('Project members loaded:', {
+        count: members.length,
+        members: members.map(m => ({ id: m.userId, name: m.user?.name, email: m.user?.email }))
+      })
+    }
+  }, [members, membersError])
 
   const handlePriorityChange = (value: string) => {
     updateTaskMutation.mutate({
@@ -50,9 +64,13 @@ export default function TaskAttributesSidebar({ task, projectId }: TaskAttribute
   }
 
   const handleAssigneeChange = (value: string) => {
+    console.log('Assignee change triggered:', { value, taskId: task.id })
+    const assigneeId = value === 'unassigned' ? undefined : value
+    console.log('Assignee ID to update:', assigneeId)
+
     updateTaskMutation.mutate({
       id: task.id,
-      updates: { assigneeId: value === 'unassigned' ? undefined : value },
+      updates: { assigneeId },
     })
   }
 

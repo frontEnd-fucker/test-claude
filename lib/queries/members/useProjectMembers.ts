@@ -18,11 +18,19 @@ import { toast } from "sonner";
  * Hook for fetching project members
  */
 export function useProjectMembers(projectId: string) {
-  console.log("useProjectMembers!!!");
   return useQuery({
     queryKey: ["project-members", projectId],
     queryFn: () => fetchProjectMembers(projectId),
     enabled: !!projectId,
+    onError: (error) => {
+      console.error("Error fetching project members:", error);
+    },
+    onSuccess: (data) => {
+      console.log("Project members fetched successfully:", {
+        count: data.length,
+        projectId
+      });
+    }
   });
 }
 

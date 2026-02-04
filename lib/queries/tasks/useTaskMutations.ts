@@ -5,6 +5,7 @@ import { useParams } from 'next/navigation'
 import { taskKeys } from './query-keys'
 import { createTask, updateTask, deleteTask } from './api'
 import { Task, TaskStatus, PriorityLevel } from '@/types/database'
+import { toast } from 'sonner'
 
 export function useCreateTask() {
   const queryClient = useQueryClient()
@@ -30,7 +31,7 @@ export function useCreateTask() {
       await queryClient.cancelQueries({ queryKey: taskKeys.all })
 
       // Snapshot the previous value
-      const previousTasks = queryClient.getQueriesData<Task[]>({
+      const previousTasks = queryClient.getQueriesData({
         queryKey: taskKeys.all,
       })
 
@@ -48,11 +49,15 @@ export function useCreateTask() {
         updatedAt: new Date(),
       }
 
-      // Update all task lists (prepend for the column)
-      previousTasks.forEach(([queryKey, tasks = []]) => {
-        // Insert at beginning of the appropriate column
-        const updatedTasks = [...tasks, optimisticTask]
-        queryClient.setQueryData(queryKey, updatedTasks)
+      // Update all task lists (only for array queries)
+      previousTasks.forEach(([queryKey, data]) => {
+        if (!data) return
+
+        // Only update array queries (list queries), not detail queries
+        if (Array.isArray(data)) {
+          const updatedTasks = [...data, optimisticTask]
+          queryClient.setQueryData(queryKey, updatedTasks)
+        }
       })
 
       return { previousTasks }
@@ -79,30 +84,53 @@ export function useUpdateTask() {
     mutationFn: (params: { id: string; updates: Parameters<typeof updateTask>[1] }) =>
       updateTask(params.id, params.updates),
     onMutate: async ({ id, updates }) => {
+      console.log('Optimistically updating task:', { id, updates })
       // Cancel any outgoing refetches
       await queryClient.cancelQueries({ queryKey: taskKeys.all })
 
       // Snapshot the previous value
-      const previousTasks = queryClient.getQueriesData<Task[]>({
+      const previousTasks = queryClient.getQueriesData({
         queryKey: taskKeys.all,
       })
 
       // Optimistically update the task
-      previousTasks.forEach(([queryKey, tasks = []]) => {
-        const updatedTasks = tasks.map(task =>
-          task.id === id ? { ...task, ...updates, updatedAt: new Date() } : task
-        )
-        queryClient.setQueryData(queryKey, updatedTasks)
+      previousTasks.forEach(([queryKey, data]) => {
+        if (!data) return
+
+        // Handle array of tasks (list queries)
+        if (Array.isArray(data)) {
+          const updatedTasks = data.map(task =>
+            task.id === id ? { ...task, ...updates, updatedAt: new Date() } : task
+          )
+          queryClient.setQueryData(queryKey, updatedTasks)
+        }
+        // Handle single task (detail queries)
+        else if (data && typeof data === 'object' && data.id === id) {
+          const updatedTask = { ...data, ...updates, updatedAt: new Date() }
+          queryClient.setQueryData(queryKey, updatedTask)
+        }
       })
 
       return { previousTasks }
     },
     onError: (err, variables, context) => {
+      console.error('Task update failed:', err)
+      toast.error('Failed to update task', {
+        description: err instanceof Error ? err.message : 'Unknown error occurred'
+      })
+
       // Rollback on error
       if (context?.previousTasks) {
         context.previousTasks.forEach(([queryKey, tasks]) => {
           queryClient.setQueryData(queryKey, tasks)
         })
+      }
+    },
+    onSuccess: (data, variables) => {
+      console.log('Task update successful:', { id: data.id, updates: variables.updates })
+      // Only show success toast for assignee changes to avoid too many notifications
+      if ('assigneeId' in variables.updates) {
+        toast.success('Task assigned successfully')
       }
     },
     onSettled: (data, error, variables) => {
@@ -123,14 +151,24 @@ export function useDeleteTask() {
       await queryClient.cancelQueries({ queryKey: taskKeys.all })
 
       // Snapshot the previous value
-      const previousTasks = queryClient.getQueriesData<Task[]>({
+      const previousTasks = queryClient.getQueriesData({
         queryKey: taskKeys.all,
       })
 
       // Optimistically remove the task
-      previousTasks.forEach(([queryKey, tasks = []]) => {
-        const updatedTasks = tasks.filter(task => task.id !== id)
-        queryClient.setQueryData(queryKey, updatedTasks)
+      previousTasks.forEach(([queryKey, data]) => {
+        if (!data) return
+
+        // Handle array of tasks (list queries)
+        if (Array.isArray(data)) {
+          const updatedTasks = data.filter(task => task.id !== id)
+          queryClient.setQueryData(queryKey, updatedTasks)
+        }
+        // Handle single task (detail queries) - if deleting this specific task
+        else if (data && typeof data === 'object' && data.id === id) {
+          // Set to null or undefined for detail query of the deleted task
+          queryClient.setQueryData(queryKey, null)
+        }
       })
 
       return { previousTasks }
