@@ -10,6 +10,7 @@ import { AuthGuard } from '@/components/auth/AuthGuard'
 import TaskDetailHeader from '@/components/task-detail/TaskDetailHeader'
 import TaskDescriptionEditor from '@/components/task-detail/TaskDescriptionEditor'
 import TaskAttributesSidebar from '@/components/task-detail/TaskAttributesSidebar'
+import { CommentsSection } from '@/components/comments'
 import { Skeleton } from '@/components/ui/skeleton'
 
 export default function TaskDetailPage() {
@@ -85,6 +86,11 @@ export default function TaskDetailPage() {
             {/* Main content - description */}
             <div className="lg:col-span-2">
               <TaskDescriptionEditor task={task} />
+
+              {/* Comments section */}
+              <div className="mt-8">
+                <CommentsSection taskId={task.id} />
+              </div>
             </div>
 
             {/* Sidebar - attributes */}

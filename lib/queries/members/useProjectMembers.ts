@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useState, useEffect } from "react";
 import {
   ProjectMember,
   InsertProjectMember,
@@ -12,6 +13,7 @@ import {
   getProjectMemberByUserId,
   isUserProjectMember,
 } from "@/lib/queries/members/api";
+import { createClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
 
 /**
@@ -22,15 +24,6 @@ export function useProjectMembers(projectId: string) {
     queryKey: ["project-members", projectId],
     queryFn: () => fetchProjectMembers(projectId),
     enabled: !!projectId,
-    onError: (error) => {
-      console.error("Error fetching project members:", error);
-    },
-    onSuccess: (data) => {
-      console.log("Project members fetched successfully:", {
-        count: data.length,
-        projectId
-      });
-    }
   });
 }
 
@@ -132,4 +125,30 @@ export function useProjectMemberByUserId(projectId: string, userId: string) {
     queryFn: () => getProjectMemberByUserId(projectId, userId),
     enabled: !!projectId && !!userId,
   });
+}
+
+/**
+ * Hook for getting current user's project member info
+ */
+export function useProjectMember(projectId?: string) {
+  const supabase = createClient()
+  const [userId, setUserId] = useState<string | null>(null)
+
+  // Get current user ID
+  useEffect(() => {
+    const getUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      setUserId(user?.id || null)
+    }
+    getUser()
+  }, [supabase])
+
+  return useQuery({
+    queryKey: ["project-member-current", projectId, userId],
+    queryFn: async () => {
+      if (!projectId || !userId) return null
+      return getProjectMemberByUserId(projectId, userId)
+    },
+    enabled: !!projectId && !!userId,
+  })
 }

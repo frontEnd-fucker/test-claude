@@ -13,6 +13,8 @@ export type Permission =
   | 'edit_todos'
   | 'view_notes'
   | 'edit_notes'
+  | 'view_comments'
+  | 'edit_comments'
 
 export const ROLE_PERMISSIONS: Record<ProjectMember['role'], Permission[]> = {
   owner: [
@@ -28,6 +30,8 @@ export const ROLE_PERMISSIONS: Record<ProjectMember['role'], Permission[]> = {
     'edit_todos',
     'view_notes',
     'edit_notes',
+    'view_comments',
+    'edit_comments',
   ],
   admin: [
     'view_project',
@@ -41,6 +45,8 @@ export const ROLE_PERMISSIONS: Record<ProjectMember['role'], Permission[]> = {
     'edit_todos',
     'view_notes',
     'edit_notes',
+    'view_comments',
+    'edit_comments',
   ],
   member: [
     'view_project',
@@ -51,11 +57,14 @@ export const ROLE_PERMISSIONS: Record<ProjectMember['role'], Permission[]> = {
     'edit_todos',
     'view_notes',
     'edit_notes',
+    'view_comments',
+    'edit_comments',
   ],
   viewer: [
     'view_project',
     'view_todos',
     'view_notes',
+    'view_comments',
   ],
 }
 
@@ -118,6 +127,41 @@ export function canEditTasks(member: ProjectMember | null): boolean {
  */
 export function canDeleteTasks(member: ProjectMember | null): boolean {
   return hasPermission(member, 'delete_task')
+}
+
+/**
+ * Check if member can view comments
+ */
+export function canViewComments(member: ProjectMember | null): boolean {
+  return hasPermission(member, 'view_comments')
+}
+
+/**
+ * Check if member can create comments
+ */
+export function canCreateComments(member: ProjectMember | null): boolean {
+  return hasPermission(member, 'edit_comments')
+}
+
+/**
+ * Check if member can edit comments
+ */
+export function canEditComments(member: ProjectMember | null): boolean {
+  return hasPermission(member, 'edit_comments')
+}
+
+/**
+ * Check if member can delete comments
+ */
+export function canDeleteComments(
+  isAuthor: boolean,
+  member: ProjectMember | null
+): boolean {
+  // Author can delete their own comments
+  if (isAuthor) return true
+
+  // Admin and owner can delete any comments
+  return member?.role === 'owner' || member?.role === 'admin'
 }
 
 /**

@@ -105,7 +105,7 @@ export function useUpdateTask() {
           queryClient.setQueryData(queryKey, updatedTasks)
         }
         // Handle single task (detail queries)
-        else if (data && typeof data === 'object' && data.id === id) {
+        else if (data && typeof data === 'object' && 'id' in data && data.id === id) {
           const updatedTask = { ...data, ...updates, updatedAt: new Date() }
           queryClient.setQueryData(queryKey, updatedTask)
         }
@@ -202,7 +202,7 @@ export function useDeleteTask() {
           queryClient.setQueryData(queryKey, updatedTasks)
         }
         // Handle single task (detail queries) - if deleting this specific task
-        else if (data && typeof data === 'object' && data.id === id) {
+        else if (data && typeof data === 'object' && 'id' in data && data.id === id) {
           // Set to null or undefined for detail query of the deleted task
           queryClient.setQueryData(queryKey, null)
         }

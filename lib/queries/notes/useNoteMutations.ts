@@ -20,13 +20,12 @@ export function useCreateNote() {
     }) => createNote(params.title, params.content, params.tags, params.projectId ?? routeProjectId),
     onMutate: async (params) => {
       const projectId = params.projectId ?? routeProjectId
+      const queryKey = noteKeys.list({ projectId })
       // Cancel any outgoing refetches
-      await queryClient.cancelQueries({ queryKey: noteKeys.list({ projectId }) })
+      await queryClient.cancelQueries({ queryKey })
 
       // Snapshot the previous value
-      const previousNotes = queryClient.getQueriesData<Note[]>({
-        queryKey: noteKeys.list({ projectId }),
-      })
+      const previousNotes = queryClient.getQueryData<Note[]>(queryKey) || []
 
       // Optimistically create a new note
       const optimisticNote: Note = {
@@ -41,19 +40,15 @@ export function useCreateNote() {
         updatedAt: new Date(),
       }
 
-      // Update all note lists
-      previousNotes.forEach(([queryKey, notes = []]) => {
-        queryClient.setQueryData(queryKey, [optimisticNote, ...notes])
-      })
+      // Update the note list
+      queryClient.setQueryData(queryKey, [optimisticNote, ...previousNotes])
 
-      return { previousNotes, projectId }
+      return { previousNotes, queryKey, projectId }
     },
     onError: (err, variables, context) => {
       // Rollback on error
-      if (context?.previousNotes) {
-        context.previousNotes.forEach(([queryKey, notes]) => {
-          queryClient.setQueryData(queryKey, notes)
-        })
+      if (context?.previousNotes !== undefined && context?.queryKey) {
+        queryClient.setQueryData(context.queryKey, context.previousNotes)
       }
     },
     onSettled: (data, error, variables) => {

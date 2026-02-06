@@ -75,12 +75,40 @@ export interface Note {
   updatedAt: Date
 }
 
+export interface Comment {
+  id: string
+  content: string
+
+  // Associate with either task or project (mutually exclusive)
+  taskId?: string
+  projectId?: string
+
+  // Reply functionality
+  parentId?: string
+
+  // User information
+  userId: string
+  createdAt: Date
+  updatedAt: Date
+
+  // Associated data (optional, for UI display)
+  user?: User
+  replies?: Comment[]
+  parent?: Comment
+}
+
 // Insert types (for creating new records)
 export type InsertTask = Omit<Task, 'id' | 'createdAt' | 'updatedAt'> & Partial<Pick<Task, 'id' | 'createdAt' | 'updatedAt'>>
 export type InsertTodoItem = Omit<TodoItem, 'id' | 'createdAt' | 'updatedAt'> & Partial<Pick<TodoItem, 'id' | 'createdAt' | 'updatedAt'>>
 export type InsertNote = Omit<Note, 'id' | 'createdAt' | 'updatedAt'> & Partial<Pick<Note, 'id' | 'createdAt' | 'updatedAt'>>
 export type InsertProject = Omit<Project, 'id' | 'createdAt' | 'updatedAt'> & Partial<Pick<Project, 'id' | 'createdAt' | 'updatedAt'>>
 export type InsertProjectMember = Omit<ProjectMember, 'id' | 'createdAt' | 'updatedAt'> & Partial<Pick<ProjectMember, 'id' | 'createdAt' | 'updatedAt'>>
+export type InsertComment = {
+  content: string
+  taskId?: string
+  projectId?: string
+  parentId?: string
+}
 
 // Update types (for updating records)
 export type UpdateTask = Partial<Omit<Task, 'id' | 'userId' | 'createdAt' | 'updatedAt'>>
@@ -88,6 +116,9 @@ export type UpdateTodoItem = Partial<Omit<TodoItem, 'id' | 'userId' | 'createdAt
 export type UpdateNote = Partial<Omit<Note, 'id' | 'userId' | 'createdAt' | 'updatedAt'>>
 export type UpdateProject = Partial<Omit<Project, 'id' | 'userId' | 'createdAt' | 'updatedAt'>>
 export type UpdateProjectMember = Partial<Omit<ProjectMember, 'id' | 'projectId' | 'userId' | 'createdAt' | 'updatedAt'>>
+export type UpdateComment = {
+  content?: string
+}
 
 // Type guards
 export function isTask(obj: unknown): obj is Task {
@@ -100,4 +131,8 @@ export function isTodoItem(obj: unknown): obj is TodoItem {
 
 export function isNote(obj: unknown): obj is Note {
   return !!(obj && typeof obj === 'object' && obj !== null && 'id' in obj && typeof obj.id === 'string' && 'title' in obj && typeof obj.title === 'string' && 'content' in obj && typeof obj.content === 'string')
+}
+
+export function isComment(obj: unknown): obj is Comment {
+  return !!(obj && typeof obj === 'object' && obj !== null && 'id' in obj && typeof obj.id === 'string' && 'content' in obj && typeof obj.content === 'string' && 'userId' in obj && typeof obj.userId === 'string')
 }

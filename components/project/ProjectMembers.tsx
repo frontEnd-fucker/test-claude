@@ -4,6 +4,7 @@ import { useProjectMembers } from "@/lib/queries/members/useProjectMembers";
 import { useCurrentUser } from "@/lib/queries/users/useUsers";
 import { useProjectMemberByUserId } from "@/lib/queries/members/useProjectMembers";
 import { canManageMembers } from "@/lib/permissions/project";
+import { ProjectMember } from "@/types/database";
 import MembersList from "@/components/project/MembersList";
 import AddMemberDialog from "@/components/project/AddMemberDialog";
 import { Button } from "@/components/ui/button";
@@ -20,8 +21,9 @@ export default function ProjectMembers({
   projectId,
   compact = false,
 }: ProjectMembersProps) {
-  const { data: members = [], isLoading: isLoadingMembers } =
+  const { data: membersData = [], isLoading: isLoadingMembers } =
     useProjectMembers(projectId);
+  const members = membersData as ProjectMember[];
   const { data: currentUser, isLoading: isLoadingUser } = useCurrentUser();
   const { data: project, isLoading: isLoadingProject } = useProject(projectId);
 
