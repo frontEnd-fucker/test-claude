@@ -38,7 +38,7 @@ export async function fetchTasks(projectId?: string): Promise<Task[]> {
     dueDate: task.due_date ? new Date(task.due_date) : undefined,
     projectId: task.project_id,
     userId: task.user_id,
-    assigneeId: task.assignee_id,
+    assigneeId: task.assignee_id || undefined,
     createdAt: new Date(task.created_at),
     updatedAt: new Date(task.updated_at),
   })) as Task[]
@@ -77,7 +77,7 @@ export async function fetchTask(id: string): Promise<Task> {
     dueDate: task.due_date ? new Date(task.due_date) : undefined,
     projectId: task.project_id,
     userId: task.user_id,
-    assigneeId: task.assignee_id,
+    assigneeId: task.assignee_id || undefined,
     createdAt: new Date(task.created_at),
     updatedAt: new Date(task.updated_at),
   } as Task
@@ -139,7 +139,7 @@ export async function createTask(
     dueDate: newTask.due_date ? new Date(newTask.due_date) : undefined,
     projectId: newTask.project_id,
     userId: newTask.user_id,
-    assigneeId: newTask.assignee_id,
+    assigneeId: newTask.assignee_id || undefined,
     createdAt: new Date(newTask.created_at),
     updatedAt: new Date(newTask.updated_at),
   } as Task
@@ -199,7 +199,7 @@ export async function updateTask(
     dueDate: updatedTask.due_date ? new Date(updatedTask.due_date) : undefined,
     projectId: updatedTask.project_id,
     userId: updatedTask.user_id,
-    assigneeId: updatedTask.assignee_id,
+    assigneeId: updatedTask.assignee_id || undefined,
     createdAt: new Date(updatedTask.created_at),
     updatedAt: new Date(updatedTask.updated_at),
   } as Task

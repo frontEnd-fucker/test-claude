@@ -127,16 +127,53 @@ export function useUpdateTask() {
       }
     },
     onSuccess: (data, variables) => {
-      console.log('Task update successful:', { id: data.id, updates: variables.updates })
+      console.log('Task update successful:', {
+        id: data.id,
+        updates: variables.updates,
+        returnedData: data,
+        returnedAssigneeId: data.assigneeId
+      })
+
+      // Update cache with server response for consistency
+      // Update detail query
+      queryClient.setQueryData(taskKeys.detail(data.id), data)
+
+      // Update list queries
+      const allQueries = queryClient.getQueriesData<Task | Task[]>({
+        queryKey: taskKeys.all,
+      })
+
+      allQueries.forEach(([queryKey, queryData]) => {
+        if (!queryData) return
+
+        if (Array.isArray(queryData)) {
+          // List query - update the task in the array
+          const updatedTasks = queryData.map(task =>
+            task.id === data.id ? data : task
+          )
+          queryClient.setQueryData(queryKey, updatedTasks)
+        }
+        // Detail queries already handled above
+      })
+
       // Only show success toast for assignee changes to avoid too many notifications
       if ('assigneeId' in variables.updates) {
         toast.success('Task assigned successfully')
       }
     },
     onSettled: (data, error, variables) => {
-      // Invalidate the specific task and all lists
-      queryClient.invalidateQueries({ queryKey: taskKeys.detail(variables.id) })
-      queryClient.invalidateQueries({ queryKey: taskKeys.all })
+      console.log('Task update settled:', {
+        id: variables.id,
+        updates: variables.updates,
+        data: data,
+        error: error
+      })
+      // Only invalidate on error - optimistic updates and realtime subscriptions
+      // should handle successful updates
+      if (error) {
+        queryClient.invalidateQueries({ queryKey: taskKeys.detail(variables.id) })
+        queryClient.invalidateQueries({ queryKey: taskKeys.all })
+      }
     },
   })
 }

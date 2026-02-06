@@ -24,6 +24,39 @@ export default function TaskAttributesSidebar({ task, projectId }: TaskAttribute
     task.dueDate ? task.dueDate.toISOString().split('T')[0] : ''
   )
 
+  // Local state for immediate UI feedback
+  const [localAssigneeId, setLocalAssigneeId] = useState<string>(
+    task.assigneeId || 'unassigned'
+  )
+
+  // Sync local state when task.assigneeId changes
+  React.useEffect(() => {
+    setLocalAssigneeId(task.assigneeId || 'unassigned')
+  }, [task.assigneeId])
+
+  // Reset local state on mutation error
+  React.useEffect(() => {
+    if (updateTaskMutation.isError) {
+      console.log('Mutation error, resetting localAssigneeId to task.assigneeId:', task.assigneeId || 'unassigned')
+      setLocalAssigneeId(task.assigneeId || 'unassigned')
+    }
+  }, [updateTaskMutation.isError, task.assigneeId])
+
+  // Stable value for Select component
+  const selectValue = localAssigneeId
+
+  // Debug: log task assigneeId changes
+  React.useEffect(() => {
+    console.log('TaskAttributesSidebar - task.assigneeId changed:', {
+      taskId: task.id,
+      assigneeId: task.assigneeId,
+      selectValue,
+      isUndefined: task.assigneeId === undefined,
+      isNull: task.assigneeId === null,
+      typeof: typeof task.assigneeId
+    })
+  }, [task.assigneeId, task.id, selectValue])
+
   const { data: members = [], isLoading: isLoadingMembers, error: membersError } = useProjectMembers(projectId)
 
   // Debug logging for members query
@@ -65,6 +98,9 @@ export default function TaskAttributesSidebar({ task, projectId }: TaskAttribute
 
   const handleAssigneeChange = (value: string) => {
     console.log('Assignee change triggered:', { value, taskId: task.id })
+    // Update local state immediately for responsive UI
+    setLocalAssigneeId(value)
+
     const assigneeId = value === 'unassigned' ? undefined : value
     console.log('Assignee ID to update:', assigneeId)
 
@@ -92,6 +128,14 @@ export default function TaskAttributesSidebar({ task, projectId }: TaskAttribute
     }
   }
 
+  console.log('TaskAttributesSidebar rendering:', {
+    taskId: task.id,
+    assigneeId: task.assigneeId,
+    localAssigneeId,
+    selectValue,
+    membersCount: members.length
+  })
+
   return (
     <Card>
       <CardHeader>
@@ -110,39 +154,36 @@ export default function TaskAttributesSidebar({ task, projectId }: TaskAttribute
             Assignee
           </Label>
           <Select
-            value={task.assigneeId || 'unassigned'}
+            key={`assignee-select-${task.id}-${selectValue}`}
+            value={selectValue}
             onValueChange={handleAssigneeChange}
             disabled={updateTaskMutation.isPending || isLoadingMembers}
           >
             <SelectTrigger>
               <SelectValue placeholder="Unassigned">
-                {task.assigneeId ? (
-                  <div className="flex items-center gap-2">
-                    {(() => {
-                      const member = members.find((m) => m.userId === task.assigneeId)
-                      return (
-                        <>
-                          <Avatar className="h-4 w-4">
-                            {member?.user?.avatarUrl ? (
-                              <AvatarImage
-                                src={member.user.avatarUrl}
-                                alt={member.user.name || member.user.email}
-                              />
-                            ) : null}
-                            <AvatarFallback className="text-[8px]">
-                              {member?.user?.name?.[0]?.toUpperCase() ||
-                                member?.user?.email?.[0]?.toUpperCase() ||
-                                'U'}
-                            </AvatarFallback>
-                          </Avatar>
-                          <span>
-                            {member?.user?.name || member?.user?.email || 'Unknown User'}
-                          </span>
-                        </>
-                      )
-                    })()}
-                  </div>
-                ) : null}
+                {localAssigneeId !== 'unassigned' ? (() => {
+                  const member = members.find((m) => m.userId === localAssigneeId)
+                  return (
+                    <div className="flex items-center gap-2">
+                      <Avatar className="h-4 w-4">
+                        {member?.user?.avatarUrl ? (
+                          <AvatarImage
+                            src={member.user.avatarUrl}
+                            alt={member.user.name || member.user.email}
+                          />
+                        ) : null}
+                        <AvatarFallback className="text-[8px]">
+                          {member?.user?.name?.[0]?.toUpperCase() ||
+                            member?.user?.email?.[0]?.toUpperCase() ||
+                            'U'}
+                        </AvatarFallback>
+                      </Avatar>
+                      <span>
+                        {member?.user?.name || member?.user?.email || 'Unknown User'}
+                      </span>
+                    </div>
+                  )
+                })() : null}
               </SelectValue>
             </SelectTrigger>
             <SelectContent>
