@@ -12,6 +12,7 @@ import {
   cleanupAssignmentTestData,
   verifyAssignmentPersistence,
   getTestMemberEmail,
+  getTestMemberName,
   isTestMemberEmailConfigured,
 } from "../utils/task-test-helpers";
 
@@ -56,8 +57,6 @@ test.describe("任务分配功能E2E测试", () => {
       // 获取测试成员邮箱
       const memberEmail = getTestMemberEmail();
 
-      // await addMemberDialog.fillEmail(memberEmail);
-
       // 分配任务（使用邮箱或名称的一部分）
       await taskDetailPage.selectAssignee(memberEmail.split("@")[0]);
     });
@@ -65,11 +64,11 @@ test.describe("任务分配功能E2E测试", () => {
     await test.step("验证分配成功", async () => {
       const currentAssignee = await taskDetailPage.getCurrentAssignee();
       expect(currentAssignee).not.toBe("Unassigned");
-      expect(currentAssignee).toContain("Test"); // 应该包含测试用户名称
+      expect(currentAssignee).toContain(getTestMemberName()); // 应该包含测试用户名称
     });
 
     await test.step("验证分配状态持久化", async () => {
-      await verifyAssignmentPersistence(taskDetailPage, "Test");
+      await verifyAssignmentPersistence(taskDetailPage, getTestMemberName());
     });
 
     await test.step("清理测试数据", async () => {
@@ -166,7 +165,8 @@ test.describe("任务分配功能E2E测试", () => {
         expect(currentAssignee).not.toBe("Unassigned");
       } catch (error) {
         // 如果当前用户不在成员列表中，这是可以接受的
-        const errorMessage = error instanceof Error ? error.message : String(error);
+        const errorMessage =
+          error instanceof Error ? error.message : String(error);
         console.log("当前用户可能不在项目成员列表中:", errorMessage);
       }
     });
@@ -219,10 +219,10 @@ test.describe("任务分配功能E2E测试", () => {
       await expect(selectContent).toBeVisible();
 
       // 检查是否有"Unassigned"选项
-      const unassignedOption = selectContent.getByRole("option", {
+      const UnassignedOption = selectContent.getByRole("option", {
         name: "Unassigned",
       });
-      await expect(unassignedOption).toBeVisible();
+      await expect(UnassignedOption).toBeVisible();
 
       // 关闭下拉菜单
       await loggedInPage.keyboard.press("Escape");
@@ -285,10 +285,10 @@ test.describe("任务分配功能E2E测试", () => {
         expect(optionCount).toBeGreaterThan(0);
 
         // 至少应该有"Unassigned"选项
-        const unassignedOption = taskDetailPage[
+        const UnassignedOption = taskDetailPage[
           "assigneeSelectContent"
         ].getByRole("option", { name: "Unassigned" });
-        await expect(unassignedOption).toBeVisible();
+        await expect(UnassignedOption).toBeVisible();
       }
 
       // 关闭下拉菜单

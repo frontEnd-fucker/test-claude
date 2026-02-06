@@ -54,7 +54,7 @@ export class AddMemberDialog {
    */
   async waitForOpen(): Promise<void> {
     await this.dialog.waitFor({ state: "visible" });
-    await this.emailInput.waitFor({ state: "visible" });
+    // await this.emailInput.waitFor({ state: "visible" });
   }
 
   /**
@@ -99,10 +99,12 @@ export class AddMemberDialog {
   async searchAndSelectUser(email: string, userName?: string): Promise<void> {
     await this.fillEmail(email);
 
+    // 暂时先不用下拉选择
+
     // 等待搜索结果出现
-    await this.searchResults
-      .first()
-      .waitFor({ state: "visible", timeout: 5000 });
+    // await this.searchResults
+    //   .first()
+    //   .waitFor({ state: "visible", timeout: 5000 });
 
     // 查找匹配的用户
     // const userResult = this.searchResults.filter({ hasText: email }).or(
@@ -179,7 +181,7 @@ export class AddMemberDialog {
     userName?: string,
     role: "member" | "admin" | "viewer" = "member"
   ): Promise<void> {
-    // await this.searchAndSelectUser(email, userName);
+    await this.searchAndSelectUser(email, userName);
 
     // if (role !== "member") {
     //   await this.selectRole(role);
