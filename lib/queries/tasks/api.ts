@@ -162,9 +162,12 @@ export async function updateTask(
   if (updates.status !== undefined) dbUpdates.status = updates.status
   if (updates.priority !== undefined) dbUpdates.priority = updates.priority
   if (updates.position !== undefined) dbUpdates.position = updates.position
-  if (updates.dueDate !== undefined) dbUpdates.due_date = updates.dueDate?.toISOString()
+  if ('dueDate' in updates) {
+    // Convert undefined to null for Supabase, Date to ISO string
+    dbUpdates.due_date = updates.dueDate === undefined ? null : updates.dueDate?.toISOString()
+  }
   if (updates.projectId !== undefined) dbUpdates.project_id = updates.projectId
-  if (updates.assigneeId !== undefined) {
+  if ('assigneeId' in updates) {
     // Convert undefined to null for Supabase
     dbUpdates.assignee_id = updates.assigneeId === undefined ? null : updates.assigneeId
     console.log('Assignee update:', { assigneeId: updates.assigneeId, db_assignee_id: dbUpdates.assignee_id })
