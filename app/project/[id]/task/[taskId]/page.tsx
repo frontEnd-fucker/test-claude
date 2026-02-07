@@ -89,7 +89,7 @@ export default function TaskDetailPage() {
 
               {/* Comments section */}
               <div className="mt-8">
-                <CommentsSection taskId={task.id} />
+                <CommentsSection taskId={task.id} projectId={projectId} />
               </div>
             </div>
 

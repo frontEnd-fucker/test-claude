@@ -235,6 +235,8 @@ export async function getProjectMemberByUserId(
 ): Promise<ProjectMember | null> {
   const supabase = createClient();
 
+  console.log('getProjectMemberByUserId called:', { projectId, userId });
+
   const { data: member, error } = await supabase
     .from("project_members")
     .select("*")
@@ -244,12 +246,20 @@ export async function getProjectMemberByUserId(
     .single();
 
   if (error) {
+    console.log('getProjectMemberByUserId error:', {
+      code: error.code,
+      message: error.message,
+      details: error.details,
+      hint: error.hint
+    });
     if (error.code === "PGRST116") {
       // No rows returned
       return null;
     }
     throw error;
   }
+
+  console.log('getProjectMemberByUserId found member:', { member });
 
   // Fetch user information
   const user = await getUsersByIds([member.user_id]);

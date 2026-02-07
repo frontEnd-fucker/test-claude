@@ -143,12 +143,30 @@ export function useProjectMember(projectId?: string) {
     getUser()
   }, [supabase])
 
-  return useQuery({
+
+  const query = useQuery({
     queryKey: ["project-member-current", projectId, userId],
     queryFn: async () => {
-      if (!projectId || !userId) return null
-      return getProjectMemberByUserId(projectId, userId)
+      if (!projectId || !userId) {
+        console.log('useProjectMember queryFn: missing projectId or userId', { projectId, userId })
+        return null
+      }
+      console.log('useProjectMember queryFn: fetching member', { projectId, userId })
+      const member = await getProjectMemberByUserId(projectId, userId)
+      console.log('useProjectMember queryFn: result', { member })
+      return member
     },
     enabled: !!projectId && !!userId,
   })
+
+  console.log('useProjectMember hook result:', {
+    projectId,
+    userId,
+    enabled: !!projectId && !!userId,
+    data: query.data,
+    isLoading: query.isLoading,
+    error: query.error
+  })
+
+  return query
 }

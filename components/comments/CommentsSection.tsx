@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useParams } from 'next/navigation'
 import { useComments, useCreateComment } from '@/lib/queries/comments'
 import { useProjectMember } from '@/lib/queries/members'
 import { canCreateComments } from '@/lib/permissions/project'
@@ -19,6 +20,7 @@ interface CommentsSectionProps {
 export default function CommentsSection({ taskId, projectId }: CommentsSectionProps) {
   const [newComment, setNewComment] = useState('')
   const [replyingTo, setReplyingTo] = useState<string | null>(null)
+  const params = useParams()
 
   // Fetch comments
   const {
@@ -30,6 +32,7 @@ export default function CommentsSection({ taskId, projectId }: CommentsSectionPr
 
   // Fetch user's project member info for permissions
   const { data: member, isLoading: memberLoading } = useProjectMember(projectId)
+
 
   const createCommentMutation = useCreateComment()
 
@@ -119,6 +122,7 @@ export default function CommentsSection({ taskId, projectId }: CommentsSectionPr
           <form onSubmit={handleSubmit} className="space-y-3">
             <div>
               <Textarea
+                id="comment-textarea"
                 value={newComment}
                 onChange={(e) => setNewComment(e.target.value)}
                 placeholder={
@@ -166,15 +170,45 @@ export default function CommentsSection({ taskId, projectId }: CommentsSectionPr
           canCreate={canCreate}
         />
       ) : (
-        <Card className="p-8 text-center">
-          <MessageSquare className="mx-auto h-12 w-12 text-muted-foreground/50" />
-          <h4 className="mt-4 text-lg font-medium">No comments yet</h4>
-          <p className="mt-2 text-sm text-muted-foreground">
-            {canCreate
-              ? 'Be the first to add a comment!'
-              : 'No comments have been added yet.'}
-          </p>
-        </Card>
+        <div className="text-center">
+          {canCreate ? (
+            <div
+              className="group cursor-pointer border-2 border-dashed border-primary/30 hover:border-primary/50 rounded-xl p-8 transition-all hover:shadow-md bg-gradient-to-br from-primary/5 to-transparent"
+              onClick={() => {
+                // 自动聚焦到评论表单
+                const textarea = document.getElementById('comment-textarea')
+                textarea?.focus()
+              }}
+            >
+              <MessageSquare className="mx-auto h-16 w-16 text-primary/60 group-hover:text-primary/80 transition-colors" />
+              <h4 className="mt-6 text-xl font-semibold">Start the discussion</h4>
+              <p className="mt-2 text-muted-foreground">
+                Be the first to add a comment and collaborate on this task.
+              </p>
+              <Button
+                variant="default"
+                className="mt-6 px-6 py-3 text-base"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  const textarea = document.getElementById('comment-textarea')
+                  textarea?.focus()
+                }}
+              >
+                <MessageSquare className="mr-2 h-5 w-5" />
+                Add First Comment
+              </Button>
+            </div>
+          ) : (
+            // 保持原有的无权限状态
+            <Card className="p-8 text-center">
+              <MessageSquare className="mx-auto h-12 w-12 text-muted-foreground/50" />
+              <h4 className="mt-4 text-lg font-medium">No comments yet</h4>
+              <p className="mt-2 text-sm text-muted-foreground">
+                No comments have been added yet.
+              </p>
+            </Card>
+          )}
+        </div>
       )}
     </div>
   )
