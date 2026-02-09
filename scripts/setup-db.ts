@@ -9,56 +9,96 @@
  */
 
 console.log(`
-=== Supabase Database Setup Instructions ===
+=== 本地开发环境设置 ===
 
-1. Go to https://supabase.com and create a new project or use an existing one.
+1. 安装必需工具：
+   - 安装Docker Desktop: https://www.docker.com/products/docker-desktop
+   - 安装Supabase CLI: npm install -g supabase 或 brew install supabase/tap/supabase
 
-2. Get your Supabase credentials:
-   - Go to Project Settings > API
-   - Copy your "Project URL" (NEXT_PUBLIC_SUPABASE_URL)
-   - Copy your "anon public" key (NEXT_PUBLIC_SUPABASE_ANON_KEY)
-   - Copy your "service_role" key (SUPABASE_SERVICE_ROLE_KEY) - keep this secret!
+2. 启动本地Supabase服务：
+   npm run supabase:start
 
-3. Update your .env.local file with these values:
+3. 应用数据库schema和迁移：
+   npm run supabase:reset
+
+4. 启用实时订阅：
+   - 本地Supabase Studio: http://localhost:54323
+   - 在SQL编辑器中运行 supabase/seed.sql 中的命令
+
+5. 启动开发服务器：
+   npm run dev
+
+6. 访问应用：
+   http://localhost:3000
+
+=== 云端生产环境设置 ===
+
+1. 访问 https://supabase.com 创建新项目或使用现有项目
+
+2. 获取Supabase凭证：
+   - 进入 Project Settings > API
+   - 复制 "Project URL" (NEXT_PUBLIC_SUPABASE_URL)
+   - 复制 "anon public" key (NEXT_PUBLIC_SUPABASE_ANON_KEY)
+   - 复制 "service_role" key (SUPABASE_SERVICE_ROLE_KEY) - 保密！
+
+3. 更新 .env.production 文件：
    NEXT_PUBLIC_SUPABASE_URL=https://your-project-ref.supabase.co
    NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
    SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
 
-4. Set up the database schema:
-   - Go to the SQL Editor in your Supabase dashboard
-   - Copy the contents of lib/supabase/schema.sql
-   - Paste into the SQL Editor and run it
+4. 设置数据库schema：
+   - 在Supabase控制台的SQL编辑器中
+   - 复制 lib/supabase/schema.sql 的内容
+   - 粘贴并运行
 
-5. Verify the tables were created:
-   - Go to Table Editor in your Supabase dashboard
-   - You should see: projects, tasks, todos, notes tables
+5. 验证表已创建：
+   - 进入 Table Editor
+   - 应该看到：projects, tasks, todos, notes, comments, project_members 表
 
-6. Generate TypeScript types:
-   - Install Supabase CLI: npm install supabase --save-dev
-   - Run: npx supabase gen types typescript --project-id your-project-ref > lib/supabase/types.ts
-   - Alternatively, use the Supabase dashboard: Go to Settings > API > Generate Types
+6. 生成TypeScript类型：
+   npm run db:types
 
-7. Test the connection:
-   - Start your Next.js app: npm run dev
-   - Visit /auth/register to create an account
-   - Verify you can create tasks, todos, and notes
+7. 测试连接：
+   - 启动Next.js应用：npm run build && npm start
+   - 访问 /auth/register 创建账户
+   - 验证可以创建项目、任务、待办事项等
 
-=== Troubleshooting ===
+=== 故障排除 ===
 
-- If you get authentication errors, verify your environment variables
-- If tables don't appear, check the SQL execution for errors
-- If RLS policies prevent access, verify you're signed in and policies are correct
-- For real-time subscriptions, ensure you've enabled replication on tables
+- 如果遇到认证错误，验证环境变量
+- 如果表未出现，检查SQL执行是否有错误
+- 如果RLS策略阻止访问，验证是否已登录且策略正确
+- 对于实时订阅，确保已启用表的复制
 
-=== Next Steps ===
+=== 本地开发优势 ===
 
-After setting up the database, you need to:
-1. Update your Zustand stores to use Supabase instead of localStorage
-2. Update components to handle loading states and errors
-3. Implement real-time subscriptions if desired
-4. Add proper error handling and user feedback
+✅ 离线开发 - 无需网络连接
+✅ 数据隔离 - 开发数据不影响生产
+✅ 快速迭代 - 无网络延迟
+✅ 成本节约 - 不消耗云资源
+✅ 调试方便 - 直接访问本地数据库
 
-For more details, refer to the implementation plan.
+=== 环境切换 ===
+
+开发环境自动使用本地Supabase (NODE_ENV=development)
+生产环境自动使用云端Supabase (NODE_ENV=production)
+
+=== 常用命令 ===
+
+# 启动本地开发环境
+npm run dev:local
+
+# 停止本地服务
+npm run supabase:stop
+
+# 重置本地数据库
+npm run supabase:reset
+
+# 生成本地类型定义
+npm run db:local:types
+
+# 检查服务状态
+npm run supabase:status
 `)
 
 // Check if .env.local exists

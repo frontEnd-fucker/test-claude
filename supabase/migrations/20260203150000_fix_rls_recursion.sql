@@ -58,6 +58,26 @@ AS $$
   );
 $$;
 
+-- Function to check if user is an active member of a project
+CREATE OR REPLACE FUNCTION is_project_member(project_uuid uuid, user_uuid uuid)
+RETURNS boolean
+LANGUAGE sql
+STABLE SECURITY DEFINER
+AS $$
+  -- Check if user is an active member of the project
+  SELECT COALESCE(
+    project_uuid IS NOT NULL
+    AND user_uuid IS NOT NULL
+    AND EXISTS (
+      SELECT 1 FROM project_members pm
+      WHERE pm.project_id = project_uuid
+        AND pm.user_id = user_uuid
+        AND pm.status = 'active'
+    ),
+    FALSE
+  );
+$$;
+
 -- Update project_members RLS policies to use the functions
 DROP POLICY IF EXISTS "Users can view members of projects they belong to" ON project_members;
 CREATE POLICY "Users can view members of projects they belong to"

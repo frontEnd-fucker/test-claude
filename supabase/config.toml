@@ -1,0 +1,12 @@
+[api]
+port = 54321
+
+[db]
+port = 54322
+
+[studio]
+port = 54326
+enabled = true
+
+[inbucket]
+port = 54328
