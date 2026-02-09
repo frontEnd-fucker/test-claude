@@ -130,7 +130,7 @@ export default function AddMemberDialog({
         )}
       </DialogTrigger>
       <DialogContent className="sm:max-w-md">
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmit} noValidate>
           <DialogHeader>
             <DialogTitle>Add Project Member</DialogTitle>
             <DialogDescription>

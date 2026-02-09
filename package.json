@@ -16,7 +16,13 @@
     "test:e2e:report": "playwright show-report",
     "test:e2e:install": "playwright install",
     "test:e2e:codegen": "playwright codegen",
-    "test:e2e:verify": "node scripts/verify-e2e-setup.js"
+    "test:e2e:verify": "node scripts/verify-e2e-setup.js",
+    "supabase:start": "supabase start",
+    "supabase:stop": "supabase stop",
+    "supabase:status": "supabase status",
+    "supabase:reset": "supabase db reset --local",
+    "dev:local": "supabase start && npm run dev",
+    "db:local:types": "supabase gen types typescript --local --schema public > lib/supabase/types.ts"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
