@@ -43,10 +43,39 @@ export function useCreateProject() {
         queryClient.setQueryData(queryKey, updatedProjects)
       })
 
-      return { previousProjects }
+      return { previousProjects, optimisticProjectId: optimisticProject.id }
     },
-    onSuccess: () => {
+    onSuccess: (data, variables, context) => {
       toast.success('Project created successfully')
+
+      // Replace the optimistic project with the real one and remove any duplicates
+      if (context?.optimisticProjectId) {
+        const allQueries = queryClient.getQueriesData<Project | Project[]>({
+          queryKey: projectKeys.all,
+        })
+
+        allQueries.forEach(([queryKey, queryData]) => {
+          if (Array.isArray(queryData)) {
+            // List query - replace the temporary project with the real one
+            let updatedProjects = queryData.map(project =>
+              project.id === context.optimisticProjectId ? data : project
+            )
+
+            // Remove any duplicate projects with the same ID as the new project
+            // Keep only the first occurrence (which should be the replacement we just made)
+            const seenIds = new Set<string>()
+            updatedProjects = updatedProjects.filter(project => {
+              if (seenIds.has(project.id)) {
+                return false
+              }
+              seenIds.add(project.id)
+              return true
+            })
+
+            queryClient.setQueryData(queryKey, updatedProjects)
+          }
+        })
+      }
     },
     onError: (err, variables, context) => {
       console.error('Failed to create project:', err)
