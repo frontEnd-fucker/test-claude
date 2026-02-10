@@ -2,7 +2,7 @@
 port = 54321
 
 [db]
-port = 54322
+port = 54323
 
 [studio]
 port = 54326
