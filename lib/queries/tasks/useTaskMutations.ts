@@ -63,7 +63,26 @@ export function useCreateTask() {
       return { previousTasks, optimisticTaskId: optimisticTask.id }
     },
     onError: (err, variables, context) => {
-      // Rollback on error
+      // Show error toast
+      toast.error('Failed to create task', {
+        description: err instanceof Error ? err.message : 'Please try again',
+      })
+
+      // Remove the temporary task from cache
+      if (context?.optimisticTaskId) {
+        const allQueries = queryClient.getQueriesData<Task | Task[]>({
+          queryKey: taskKeys.all,
+        })
+
+        allQueries.forEach(([queryKey, queryData]) => {
+          if (Array.isArray(queryData)) {
+            const updatedTasks = queryData.filter(task => task.id !== context.optimisticTaskId)
+            queryClient.setQueryData(queryKey, updatedTasks)
+          }
+        })
+      }
+
+      // Rollback to previous state for queries that aren't arrays
       if (context?.previousTasks) {
         context.previousTasks.forEach(([queryKey, tasks]) => {
           queryClient.setQueryData(queryKey, tasks)
