@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useLayoutEffect } from 'react'
+import { useParams } from 'next/navigation'
 import { useNotesStore } from '@/lib/store'
 import { useNotes, useCreateNote, useUpdateNote, useDeleteNote, useNoteSubscriptions } from '@/lib/queries/notes'
 import { Button } from '@/components/ui/button'
@@ -11,6 +12,7 @@ import { cn } from '@/lib/utils'
 import { Skeleton, MinimalSkeleton } from '@/components/ui/skeleton/index'
 
 export default function NotesEditor() {
+  const params = useParams()
   const { activeNoteId, setActiveNote } = useNotesStore()
   const [content, setContent] = useState('')
   const [isEditing, setIsEditing] = useState(false)
@@ -24,9 +26,10 @@ export default function NotesEditor() {
   const updateNoteMutation = useUpdateNote()
   const deleteNoteMutation = useDeleteNote()
 
+
   const activeNote = activeNoteId
     ? notes.find((note) => note.id === activeNoteId)
-    : notes[0]
+    : undefined
 
   // eslint-disable-next-line react-compiler/react-compiler
   useLayoutEffect(() => {
@@ -49,7 +52,14 @@ export default function NotesEditor() {
       // Create new note - generate title from first line
       const firstLine = content.split('\n')[0].trim()
       const title = firstLine.length > 0 ? firstLine.substring(0, 50) : 'Untitled Note'
-      createNoteMutation.mutate({ title, content })
+      createNoteMutation.mutate(
+        { title, content },
+        {
+          onSuccess: (newNote) => {
+            setActiveNote(newNote.id)
+          },
+        }
+      )
     }
     setIsEditing(false)
   }

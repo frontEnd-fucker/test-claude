@@ -2,10 +2,10 @@ import { useQuery } from "@tanstack/react-query";
 import { projectKeys } from "./query-keys";
 import { fetchProjects } from "./api";
 
-export function useProjects() {
+export function useProjects(searchQuery?: string) {
   return useQuery({
-    queryKey: projectKeys.list(),
-    queryFn: () => fetchProjects(),
+    queryKey: projectKeys.list(searchQuery),
+    queryFn: () => fetchProjects(searchQuery),
     staleTime: 1000 * 60 * 1,
     gcTime: 1000 * 60 * 5,
   });

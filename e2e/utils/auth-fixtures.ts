@@ -10,32 +10,29 @@ export type AuthFixtures = {
 
 // 扩展基础test fixture
 export const test = base.extend<AuthFixtures>({
-  // 定义fixture：只在所有测试前初始化一次（worker级别共享）
-  loggedInContext: [
-    async ({ browser }, use) => {
-      // 1. 创建新上下文
-      const context = await browser.newContext();
-      const page = await context.newPage();
-      const loginPage = new LoginPage(page);
+  // 定义fixture：每个测试前初始化（测试级别）
+  loggedInContext: async ({ browser }, use) => {
+    // 1. 创建新上下文
+    const context = await browser.newContext();
+    const page = await context.newPage();
+    const loginPage = new LoginPage(page);
 
-      // 2. 执行登录（只执行一次）
-      await page.goto("/auth/login");
-      await loginPage.login(
-        process.env.TEST_USER_EMAIL!,
-        process.env.TEST_USER_PASSWORD!
-      );
-      await loginPage.waitForLoginSuccess();
+    // 2. 执行登录
+    await page.goto("/auth/login");
+    await loginPage.login(
+      process.env.TEST_USER_EMAIL!,
+      process.env.TEST_USER_PASSWORD!
+    );
+    await loginPage.waitForLoginSuccess();
 
-      console.log("✅ 全局登录完成，上下文已共享");
+    console.log("✅ 测试登录完成");
 
-      // 3. 把这个上下文提供给所有测试使用
-      await use(context);
+    // 3. 把这个上下文提供给测试使用
+    await use(context);
 
-      // 4. 所有测试跑完后关闭
-      await context.close();
-    },
-    { scope: "worker" as any },
-  ],
+    // 4. 测试结束后关闭
+    await context.close();
+  },
 
   // 基于上面的上下文，提供一个已登录的 page
   loggedInPage: async ({ loggedInContext }, use) => {

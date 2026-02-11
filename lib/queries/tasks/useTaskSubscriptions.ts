@@ -28,7 +28,7 @@ export function useTaskSubscriptions() {
         position: record.position as number,
         userId: record.user_id as string,
         projectId: record.project_id as string,
-        assigneeId: record.assignee_id as string | undefined,
+        assigneeId: record.assignee_id ? (record.assignee_id as string) : undefined,
         dueDate: record.due_date ? new Date(record.due_date as string) : undefined,
         createdAt: new Date(record.created_at as string),
         updatedAt: new Date(record.updated_at as string),
@@ -56,12 +56,22 @@ export function useTaskSubscriptions() {
         }
 
         case 'UPDATE': {
+          console.log('useTaskSubscriptions - UPDATE event:', {
+            eventType,
+            oldRecord: oldRecord,
+            newRecord: newRecord,
+            assignee_id: newRecord.assignee_id,
+            taskId: newRecord.id,
+            updated_at: newRecord.updated_at
+          })
           const updatedTask = convertToTask(newRecord)
+          console.log('useTaskSubscriptions - converted task:', updatedTask)
 
           // 获取所有匹配的查询
           const allQueries = queryClient.getQueriesData<Task | Task[]>({
             queryKey: taskKeys.all,
           })
+          console.log('useTaskSubscriptions - found queries:', allQueries.length)
 
           // 对每个查询单独处理
           allQueries.forEach(([queryKey, data]) => {
@@ -70,12 +80,11 @@ export function useTaskSubscriptions() {
               const updatedTasks = data.map(task =>
                 task.id === updatedTask.id ? updatedTask : task
               )
+              console.log('useTaskSubscriptions - updating array query:', queryKey)
               queryClient.setQueryData(queryKey, updatedTasks)
-            } else if (data && typeof data === 'object' && (data as Task).id === updatedTask.id) {
-              // 详情查询 - 更新单个任务
-              queryClient.setQueryData(queryKey, updatedTask)
             }
-            // 其他情况不处理
+            // 详情查询不通过实时订阅更新，由 useTaskDetail 和 onSuccess 回调管理
+            // 这样可以避免实时订阅干扰用户当前正在编辑的任务详情页
           })
 
           break

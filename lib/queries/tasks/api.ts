@@ -38,12 +38,49 @@ export async function fetchTasks(projectId?: string): Promise<Task[]> {
     dueDate: task.due_date ? new Date(task.due_date) : undefined,
     projectId: task.project_id,
     userId: task.user_id,
-    assigneeId: task.assignee_id,
+    assigneeId: task.assignee_id || undefined,
     createdAt: new Date(task.created_at),
     updatedAt: new Date(task.updated_at),
   })) as Task[]
 
   return tasks
+}
+
+/**
+ * Fetch a single task by ID
+ */
+export async function fetchTask(id: string): Promise<Task> {
+  const supabase = createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+
+  if (!user) {
+    throw new Error('User not authenticated')
+  }
+
+  const { data: task, error } = await supabase
+    .from('tasks')
+    .select('*')
+    .eq('id', id)
+    .eq('user_id', user.id)
+    .single()
+
+  if (error) throw error
+
+  // Convert database snake_case to TypeScript camelCase
+  return {
+    id: task.id,
+    title: task.title,
+    description: task.description,
+    status: task.status as TaskStatus,
+    priority: task.priority as PriorityLevel | undefined,
+    position: task.position,
+    dueDate: task.due_date ? new Date(task.due_date) : undefined,
+    projectId: task.project_id,
+    userId: task.user_id,
+    assigneeId: task.assignee_id || undefined,
+    createdAt: new Date(task.created_at),
+    updatedAt: new Date(task.updated_at),
+  } as Task
 }
 
 /**
@@ -102,7 +139,7 @@ export async function createTask(
     dueDate: newTask.due_date ? new Date(newTask.due_date) : undefined,
     projectId: newTask.project_id,
     userId: newTask.user_id,
-    assigneeId: newTask.assignee_id,
+    assigneeId: newTask.assignee_id || undefined,
     createdAt: new Date(newTask.created_at),
     updatedAt: new Date(newTask.updated_at),
   } as Task
@@ -115,6 +152,7 @@ export async function updateTask(
   id: string,
   updates: Partial<Omit<Task, 'id' | 'userId' | 'createdAt' | 'updatedAt'>>
 ): Promise<Task> {
+  console.log('updateTask API called:', { id, updates })
   const supabase = createClient()
 
   // Convert camelCase to snake_case for database fields
@@ -124,10 +162,20 @@ export async function updateTask(
   if (updates.status !== undefined) dbUpdates.status = updates.status
   if (updates.priority !== undefined) dbUpdates.priority = updates.priority
   if (updates.position !== undefined) dbUpdates.position = updates.position
-  if (updates.dueDate !== undefined) dbUpdates.due_date = updates.dueDate?.toISOString()
+  if ('dueDate' in updates) {
+    // Convert undefined to null for Supabase, Date to ISO string
+    dbUpdates.due_date = updates.dueDate === undefined ? null : updates.dueDate?.toISOString()
+  }
   if (updates.projectId !== undefined) dbUpdates.project_id = updates.projectId
+  if ('assigneeId' in updates) {
+    // Convert undefined to null for Supabase
+    dbUpdates.assignee_id = updates.assigneeId === undefined ? null : updates.assigneeId
+    console.log('Assignee update:', { assigneeId: updates.assigneeId, db_assignee_id: dbUpdates.assignee_id })
+  }
 
   dbUpdates.updated_at = new Date().toISOString()
+
+  console.log('Database updates to apply:', dbUpdates)
 
   const { data: updatedTask, error } = await supabase
     .from('tasks')
@@ -136,7 +184,12 @@ export async function updateTask(
     .select()
     .single()
 
-  if (error) throw error
+  if (error) {
+    console.error('Supabase update error:', error)
+    throw error
+  }
+
+  console.log('Task update successful:', { id: updatedTask.id, assignee_id: updatedTask.assignee_id })
 
   // Convert database snake_case to TypeScript camelCase
   return {
@@ -149,7 +202,7 @@ export async function updateTask(
     dueDate: updatedTask.due_date ? new Date(updatedTask.due_date) : undefined,
     projectId: updatedTask.project_id,
     userId: updatedTask.user_id,
-    assigneeId: updatedTask.assignee_id,
+    assigneeId: updatedTask.assignee_id || undefined,
     createdAt: new Date(updatedTask.created_at),
     updatedAt: new Date(updatedTask.updated_at),
   } as Task

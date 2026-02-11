@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { Project } from '@/types'
-import { MoreVertical, Trash, Edit, FileText, CheckSquare, StickyNote } from 'lucide-react'
+import { MoreVertical, Trash, Edit, FileText, CheckSquare, StickyNote, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -29,6 +29,10 @@ import ProjectForm from './ProjectForm'
 
 interface ProjectCardProps {
   project: Project
+}
+
+function isTempId(id: string): boolean {
+  return id.startsWith('temp-')
 }
 
 /**
@@ -74,15 +78,30 @@ export default function ProjectCard({ project }: ProjectCardProps) {
   return (
     <div data-testid="project-card" className="group relative rounded-lg border bg-card p-4 shadow-sm transition-all hover:shadow-md">
       {/* 方案一：使用透明覆盖层优化点击体验 - 悬停时显示视觉反馈 */}
-      <Link
-        href={`/project/${project.id}`}
-        className="absolute inset-0 z-10 rounded-lg transition-colors duration-200 hover:bg-accent/5"
-        aria-label={`Open project ${project.name}`}
-      />
+      {isTempId(project.id) ? (
+        <div
+          className="absolute inset-0 z-10 rounded-lg transition-colors duration-200 bg-accent/5 cursor-not-allowed"
+          aria-label={`Creating project ${project.name}...`}
+          data-testid="project-card-creating-overlay"
+        />
+      ) : (
+        <Link
+          href={`/project/${project.id}`}
+          className="absolute inset-0 z-10 rounded-lg transition-colors duration-200 hover:bg-accent/5"
+          aria-label={`Open project ${project.name}`}
+          data-testid="project-card-link"
+        />
+      )}
       <div className="relative flex items-start justify-between">
         <div className="flex-1">
           <div className="flex items-center gap-2">
             <h4 data-testid="card-title" className="font-semibold text-lg">{project.name}</h4>
+            {isTempId(project.id) && (
+              <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                <Loader2 className="h-3 w-3 animate-spin" />
+                Creating...
+              </span>
+            )}
           </div>
           {project.description && (
             <p className="mt-2 text-sm text-muted-foreground">{project.description}</p>

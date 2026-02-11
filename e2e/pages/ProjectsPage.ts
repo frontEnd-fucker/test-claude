@@ -47,17 +47,16 @@ export class ProjectsPage {
     const count = await this.getProjectCount();
     for (let i = 0; i < count; i++) {
       const card = this.projectCards.nth(i);
-      const name = await card
-        .getByTestId("card-title")
-        .textContent();
+      const name = await card.getByTestId("card-title").textContent();
       if (name) names.push(name.trim());
     }
     return names;
   }
 
   async hasProject(name: string): Promise<boolean> {
-    const names = await this.getProjectNames();
-    return names.some((projectName) => projectName.includes(name));
+    // const names = await this.getProjectNames();
+    return (await this.page.getByText(name).count()) > 0;
+    // return names.some((projectName) => projectName.includes(name));
   }
 
   async waitForProjectToAppear(name: string, timeout = 5000) {
@@ -87,7 +86,7 @@ export class ProjectsPage {
     await projectCard.hover();
 
     // 等待菜单按钮出现（通过data-testid定位）
-    const menuButton = projectCard.getByTestId('project-card-menu-button');
+    const menuButton = projectCard.getByTestId("project-card-menu-button");
     await menuButton.waitFor({ state: "visible" });
 
     // 点击菜单按钮

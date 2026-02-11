@@ -43,8 +43,14 @@ export function useNoteSubscriptions() {
           // 对每个查询单独处理
           allQueries.forEach(([queryKey, data]) => {
             if (Array.isArray(data)) {
-              // 列表查询 - 添加新笔记到开头
-              queryClient.setQueryData(queryKey, [newNote, ...data])
+              // 检查查询是否过滤了projectId
+              const queryFilters = extractFiltersFromQueryKey(queryKey)
+              const shouldInclude = shouldIncludeNoteInQuery(newNote, queryFilters)
+
+              if (shouldInclude) {
+                // 列表查询 - 添加新笔记到开头
+                queryClient.setQueryData(queryKey, [newNote, ...data])
+              }
             }
             // 详情查询不需要处理INSERT事件
           })
@@ -63,11 +69,30 @@ export function useNoteSubscriptions() {
           // 对每个查询单独处理
           allQueries.forEach(([queryKey, data]) => {
             if (Array.isArray(data)) {
-              // 列表查询 - 更新数组中的笔记
-              const updatedNotes = data.map(note =>
-                note.id === updatedNote.id ? updatedNote : note
-              )
-              queryClient.setQueryData(queryKey, updatedNotes)
+              // 检查查询是否过滤了projectId
+              const queryFilters = extractFiltersFromQueryKey(queryKey)
+              const shouldInclude = shouldIncludeNoteInQuery(updatedNote, queryFilters)
+
+              // 查找数组中是否已有该笔记
+              const existingNoteIndex = data.findIndex(note => note.id === updatedNote.id)
+              const hasExistingNote = existingNoteIndex !== -1
+
+              if (shouldInclude) {
+                if (hasExistingNote) {
+                  // 更新现有笔记
+                  const updatedNotes = data.map(note =>
+                    note.id === updatedNote.id ? updatedNote : note
+                  )
+                  queryClient.setQueryData(queryKey, updatedNotes)
+                } else {
+                  // 笔记之前不在列表中，现在应该添加（例如projectId改变）
+                  queryClient.setQueryData(queryKey, [updatedNote, ...data])
+                }
+              } else if (hasExistingNote) {
+                // 笔记不再符合过滤条件，从列表中移除
+                const updatedNotes = data.filter(note => note.id !== updatedNote.id)
+                queryClient.setQueryData(queryKey, updatedNotes)
+              }
             } else if (data && typeof data === 'object' && (data as Note).id === updatedNote.id) {
               // 详情查询 - 更新单个笔记
               queryClient.setQueryData(queryKey, updatedNote)
@@ -89,7 +114,7 @@ export function useNoteSubscriptions() {
           // 对每个查询单独处理
           allQueries.forEach(([queryKey, data]) => {
             if (Array.isArray(data)) {
-              // 列表查询 - 从数组中移除笔记
+              // 从数组中移除笔记（不需要检查过滤条件，因为笔记已被删除）
               const updatedNotes = data.filter(note => note.id !== deletedId)
               queryClient.setQueryData(queryKey, updatedNotes)
             } else if (data && typeof data === 'object' && (data as Note).id === deletedId) {
@@ -107,4 +132,36 @@ export function useNoteSubscriptions() {
       channel.unsubscribe()
     }
   }, [queryClient])
+}
+
+// Helper function to extract filters from query key
+function extractFiltersFromQueryKey(queryKey: unknown): { projectId?: string; isArchived?: boolean } {
+  if (!Array.isArray(queryKey)) return {}
+
+  // Query key format: ['notes', 'list', { filters: { projectId?, isArchived? } }]
+  const filtersIndex = queryKey.findIndex(item =>
+    typeof item === 'object' && item !== null && 'filters' in item
+  )
+
+  if (filtersIndex !== -1) {
+    const filtersObj = queryKey[filtersIndex] as { filters?: { projectId?: string; isArchived?: boolean } }
+    return filtersObj.filters || {}
+  }
+
+  return {}
+}
+
+// Helper function to check if a note should be included in a query based on filters
+function shouldIncludeNoteInQuery(note: Note, filters: { projectId?: string; isArchived?: boolean }): boolean {
+  // Check projectId filter
+  if (filters.projectId !== undefined && note.projectId !== filters.projectId) {
+    return false
+  }
+
+  // Check isArchived filter
+  if (filters.isArchived !== undefined && note.isArchived !== filters.isArchived) {
+    return false
+  }
+
+  return true
 }

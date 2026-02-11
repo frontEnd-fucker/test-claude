@@ -40,8 +40,34 @@ export function useProjectSubscriptions() {
           // 对每个查询单独处理
           allQueries.forEach(([queryKey, data]) => {
             if (Array.isArray(data)) {
-              // 列表查询 - 添加新项目到开头
-              queryClient.setQueryData(queryKey, [newProject, ...data])
+              // 列表查询 - 检查是否已存在相同ID的项目
+              const existingIndex = data.findIndex(project => project.id === newProject.id)
+              let updatedProjects: Project[]
+
+              if (existingIndex !== -1) {
+                // 更新现有项目（可能替换临时项目或更新数据）
+                updatedProjects = [...data]
+                updatedProjects[existingIndex] = newProject
+              } else {
+                // 添加新项目到开头
+                updatedProjects = [newProject, ...data]
+              }
+
+              // 移除任何具有相同名称且ID以'temp-'开头的临时项目
+              // 因为真实项目现在已经存在
+              updatedProjects = updatedProjects.filter(project => {
+                if (project.id.startsWith('temp-') && project.name === newProject.name) {
+                  // 检查描述是否匹配（如果两者都有描述或都为null/undefined）
+                  const projectDesc = project.description || ''
+                  const newProjectDesc = newProject.description || ''
+                  if (projectDesc === newProjectDesc) {
+                    return false // 移除临时项目
+                  }
+                }
+                return true
+              })
+
+              queryClient.setQueryData(queryKey, updatedProjects)
             }
             // 详情查询不需要处理INSERT事件
           })
