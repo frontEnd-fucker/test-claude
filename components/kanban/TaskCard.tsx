@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { Task } from '@/types'
-import { GripVertical, MoreVertical, Clock, Flag, Trash, Edit, ExternalLink } from 'lucide-react'
+import { GripVertical, MoreVertical, Clock, Flag, Trash, Edit, ExternalLink, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -29,6 +29,10 @@ import { useDeleteTask } from '@/lib/queries/tasks'
 interface TaskCardProps {
   task: Task
   isOverlay?: boolean
+}
+
+function isTempId(id: string): boolean {
+  return id.startsWith('temp-')
 }
 
 export default function TaskCard({ task, isOverlay = false }: TaskCardProps) {
@@ -110,14 +114,24 @@ export default function TaskCard({ task, isOverlay = false }: TaskCardProps) {
       <div className="flex items-start justify-between">
         <div className="flex-1">
           <div className="flex items-center gap-2">
-            <Link
-              href={`/project/${task.projectId}/task/${task.id}`}
-              className="font-medium hover:text-primary transition-colors hover:underline flex items-center gap-1"
-              onClick={(e) => e.stopPropagation()}
-            >
-              {task.title}
-              <ExternalLink className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity" />
-            </Link>
+            {isTempId(task.id) ? (
+              <div className="flex items-center gap-2">
+                <span className="font-medium">{task.title}</span>
+                <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                  Creating...
+                </span>
+              </div>
+            ) : (
+              <Link
+                href={`/project/${task.projectId}/task/${task.id}`}
+                className="font-medium hover:text-primary transition-colors hover:underline flex items-center gap-1"
+                onClick={(e) => e.stopPropagation()}
+              >
+                {task.title}
+                <ExternalLink className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+              </Link>
+            )}
           </div>
           {task.description && (
             <p className="mt-2 text-sm text-muted-foreground line-clamp-2">{task.description}</p>
@@ -155,12 +169,14 @@ export default function TaskCard({ task, isOverlay = false }: TaskCardProps) {
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuItem asChild>
-              <Link href={`/project/${task.projectId}/task/${task.id}`}>
-                <ExternalLink className="mr-2 h-4 w-4" />
-                View Details
-              </Link>
-            </DropdownMenuItem>
+            {!isTempId(task.id) && (
+              <DropdownMenuItem asChild>
+                <Link href={`/project/${task.projectId}/task/${task.id}`}>
+                  <ExternalLink className="mr-2 h-4 w-4" />
+                  View Details
+                </Link>
+              </DropdownMenuItem>
+            )}
             <DropdownMenuItem onClick={() => setEditOpen(true)}>
               <Edit className="mr-2 h-4 w-4" />
               Edit

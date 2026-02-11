@@ -46,8 +46,34 @@ export function useTaskSubscriptions() {
           // 对每个查询单独处理
           allQueries.forEach(([queryKey, data]) => {
             if (Array.isArray(data)) {
-              // 列表查询 - 添加新任务到末尾（保持现有顺序）
-              queryClient.setQueryData(queryKey, [...data, newTask])
+              // 列表查询 - 检查是否已存在相同ID的任务
+              const existingIndex = data.findIndex(task => task.id === newTask.id)
+              let updatedTasks: Task[]
+
+              if (existingIndex !== -1) {
+                // 更新现有任务（可能替换临时任务或更新数据）
+                updatedTasks = [...data]
+                updatedTasks[existingIndex] = newTask
+              } else {
+                // 添加新任务到开头
+                updatedTasks = [newTask, ...data]
+              }
+
+              // 移除任何具有相同标题、相同项目ID且ID以'temp-'开头的临时任务
+              // 因为真实任务现在已经存在
+              updatedTasks = updatedTasks.filter(task => {
+                if (task.id.startsWith('temp-') && task.title === newTask.title && task.projectId === newTask.projectId) {
+                  // 检查描述是否匹配（如果两者都有描述或都为null/undefined）
+                  const taskDesc = task.description || ''
+                  const newTaskDesc = newTask.description || ''
+                  if (taskDesc === newTaskDesc) {
+                    return false // 移除临时任务
+                  }
+                }
+                return true
+              })
+
+              queryClient.setQueryData(queryKey, updatedTasks)
             }
             // 详情查询不需要处理INSERT事件
           })
