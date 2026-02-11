@@ -56,15 +56,7 @@ export default function Column({
   return (
     <div
       ref={setNodeRef}
-      className={`rounded-xl border-2 ${getColumnColor()} p-4 transition-colors ${
-        finalIsOver
-          ? "ring-2 ring-primary ring-offset-2 ring-offset-background bg-primary/10"
-          : ""
-      } ${
-        taskCount === 0 && finalIsOver
-          ? "border-dashed border-primary/50 bg-primary/5"
-          : ""
-      }`}
+      className={`rounded-xl border-2 ${getColumnColor()} p-4 hover:bg-muted/5`}
     >
       <div className="mb-4 flex items-center justify-between">
         <div className="flex items-center gap-2">

@@ -3,6 +3,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { subscribeToTable } from '@/lib/utils/supabase-helpers'
 import { projectKeys } from './query-keys'
 import { Project } from '@/types/database'
+import { isTempId } from '@/types'
 
 /**
  * Hook to set up real-time subscriptions for projects
@@ -56,7 +57,7 @@ export function useProjectSubscriptions() {
               // 移除任何具有相同名称且ID以'temp-'开头的临时项目
               // 因为真实项目现在已经存在
               updatedProjects = updatedProjects.filter(project => {
-                if (project.id.startsWith('temp-') && project.name === newProject.name) {
+                if (isTempId(project.id) && project.name === newProject.name) {
                   // 检查描述是否匹配（如果两者都有描述或都为null/undefined）
                   const projectDesc = project.description || ''
                   const newProjectDesc = newProject.description || ''

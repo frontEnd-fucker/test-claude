@@ -2,7 +2,7 @@
 
 import { useParams, notFound } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, Loader2 } from 'lucide-react'
+import { ArrowLeft, Loader2, ChevronRight } from 'lucide-react'
 
 import { useTaskDetail } from '@/lib/queries/tasks'
 import { useProject } from '@/lib/queries/projects'
@@ -12,6 +12,8 @@ import TaskDescriptionEditor from '@/components/task-detail/TaskDescriptionEdito
 import TaskAttributesSidebar from '@/components/task-detail/TaskAttributesSidebar'
 import { CommentsSection } from '@/components/comments'
 import { Skeleton } from '@/components/ui/skeleton'
+import { isTempId } from '@/types'
+
 
 export default function TaskDetailPage() {
   const params = useParams()
@@ -20,6 +22,73 @@ export default function TaskDetailPage() {
 
   const { data: task, isLoading: taskLoading, error: taskError } = useTaskDetail(taskId)
   const { data: project, isLoading: projectLoading } = useProject(projectId)
+
+  if (isTempId(taskId)) {
+    return (
+      <AuthGuard>
+        <div className="container mx-auto px-4 py-8 max-w-6xl">
+          {/* Back button */}
+          <div className="mb-6">
+            <Link
+              href={`/project/${projectId}`}
+              className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Back to project
+            </Link>
+          </div>
+
+          <div className="space-y-6">
+            {/* Task header */}
+            <div className="rounded-xl border bg-card p-4 shadow-sm">
+              <div className="flex flex-col gap-3">
+                {/* Breadcrumb navigation */}
+                <nav
+                  className="flex items-center text-sm text-muted-foreground"
+                  aria-label="Breadcrumb"
+                >
+                  <Link
+                    href="/projects"
+                    className="hover:text-foreground transition-colors hover:underline"
+                  >
+                    Projects
+                  </Link>
+                  <ChevronRight className="h-3 w-3 mx-2" />
+                  <Link
+                    href={`/project/${projectId}`}
+                    className="hover:text-foreground transition-colors hover:underline"
+                  >
+                    Project
+                  </Link>
+                  <ChevronRight className="h-3 w-3 mx-2" />
+                  <span
+                    className="text-foreground font-medium truncate"
+                    aria-current="page"
+                  >
+                    Creating task...
+                  </span>
+                </nav>
+
+                <div className="flex items-center justify-center py-12">
+                  <div className="text-center space-y-4">
+                    <div className="inline-flex items-center justify-center">
+                      <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                    </div>
+                    <div>
+                      <h2 className="text-xl font-semibold">Creating task...</h2>
+                      <p className="mt-1 text-sm text-muted-foreground max-w-sm">
+                        Please wait while the task is being created. This page will refresh automatically.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </AuthGuard>
+    )
+  }
 
   if (taskLoading || projectLoading) {
     return (

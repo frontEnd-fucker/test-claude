@@ -60,13 +60,62 @@ export function useCreateTask() {
         }
       })
 
-      return { previousTasks }
+      return { previousTasks, optimisticTaskId: optimisticTask.id }
     },
     onError: (err, variables, context) => {
-      // Rollback on error
+      // Show error toast
+      toast.error('Failed to create task', {
+        description: err instanceof Error ? err.message : 'Please try again',
+      })
+
+      // Remove the temporary task from cache
+      if (context?.optimisticTaskId) {
+        const allQueries = queryClient.getQueriesData<Task | Task[]>({
+          queryKey: taskKeys.all,
+        })
+
+        allQueries.forEach(([queryKey, queryData]) => {
+          if (Array.isArray(queryData)) {
+            const updatedTasks = queryData.filter(task => task.id !== context.optimisticTaskId)
+            queryClient.setQueryData(queryKey, updatedTasks)
+          }
+        })
+      }
+
+      // Rollback to previous state for queries that aren't arrays
       if (context?.previousTasks) {
         context.previousTasks.forEach(([queryKey, tasks]) => {
           queryClient.setQueryData(queryKey, tasks)
+        })
+      }
+    },
+    onSuccess: (data, variables, context) => {
+      // Replace the optimistic task with the real one and remove any duplicates
+      if (context?.optimisticTaskId) {
+        const allQueries = queryClient.getQueriesData<Task | Task[]>({
+          queryKey: taskKeys.all,
+        })
+
+        allQueries.forEach(([queryKey, queryData]) => {
+          if (Array.isArray(queryData)) {
+            // List query - replace the temporary task with the real one
+            let updatedTasks = queryData.map(task =>
+              task.id === context.optimisticTaskId ? data : task
+            )
+
+            // Remove any duplicate tasks with the same ID as the new task
+            // Keep only the first occurrence (which should be the replacement we just made)
+            const seenIds = new Set<string>()
+            updatedTasks = updatedTasks.filter(task => {
+              if (seenIds.has(task.id)) {
+                return false
+              }
+              seenIds.add(task.id)
+              return true
+            })
+
+            queryClient.setQueryData(queryKey, updatedTasks)
+          }
         })
       }
     },

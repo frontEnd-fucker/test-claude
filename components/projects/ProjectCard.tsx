@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { Project } from '@/types'
+import { Project, isTempId } from '@/types'
 import { MoreVertical, Trash, Edit, FileText, CheckSquare, StickyNote, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
@@ -31,9 +31,6 @@ interface ProjectCardProps {
   project: Project
 }
 
-function isTempId(id: string): boolean {
-  return id.startsWith('temp-')
-}
 
 /**
  * 项目卡片组件 - 点击体验优化
