@@ -12,10 +12,8 @@ import TaskDescriptionEditor from '@/components/task-detail/TaskDescriptionEdito
 import TaskAttributesSidebar from '@/components/task-detail/TaskAttributesSidebar'
 import { CommentsSection } from '@/components/comments'
 import { Skeleton } from '@/components/ui/skeleton'
+import { isTempId } from '@/types'
 
-function isTempId(id: string): boolean {
-  return id.startsWith('temp-')
-}
 
 export default function TaskDetailPage() {
   const params = useParams()

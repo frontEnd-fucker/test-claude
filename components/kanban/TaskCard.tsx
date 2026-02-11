@@ -4,7 +4,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { Task } from '@/types'
+import { Task, isTempId } from '@/types'
 import { GripVertical, MoreVertical, Clock, Flag, Trash, Edit, ExternalLink, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
@@ -31,9 +31,6 @@ interface TaskCardProps {
   isOverlay?: boolean
 }
 
-function isTempId(id: string): boolean {
-  return id.startsWith('temp-')
-}
 
 export default function TaskCard({ task, isOverlay = false }: TaskCardProps) {
   const [editOpen, setEditOpen] = useState(false)

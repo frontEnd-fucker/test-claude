@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ChevronRight, Loader2 } from "lucide-react";
 
 import { useProject, useProjectStats } from "@/lib/queries/projects";
+import { isTempId } from "@/types";
 import KanbanBoard from "@/components/kanban/Board";
 import TodoList from "@/components/sidebar/TodoList";
 import NotesEditor from "@/components/notes/NotesEditor";
@@ -18,9 +19,6 @@ import {
   MinimalSkeleton,
 } from "@/components/ui/skeleton/index";
 
-function isTempId(id: string): boolean {
-  return id.startsWith('temp-')
-}
 
 export default function ProjectDetailPage() {
   const params = useParams();

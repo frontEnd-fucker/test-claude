@@ -3,6 +3,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { subscribeToTable } from '@/lib/utils/supabase-helpers'
 import { taskKeys } from './query-keys'
 import { Task } from '@/types/database'
+import { isTempId } from '@/types'
 
 /**
  * Hook to set up real-time subscriptions for tasks
@@ -62,7 +63,7 @@ export function useTaskSubscriptions() {
               // 移除任何具有相同标题、相同项目ID且ID以'temp-'开头的临时任务
               // 因为真实任务现在已经存在
               updatedTasks = updatedTasks.filter(task => {
-                if (task.id.startsWith('temp-') && task.title === newTask.title && task.projectId === newTask.projectId) {
+                if (isTempId(task.id) && task.title === newTask.title && task.projectId === newTask.projectId) {
                   // 检查描述是否匹配（如果两者都有描述或都为null/undefined）
                   const taskDesc = task.description || ''
                   const newTaskDesc = newTask.description || ''

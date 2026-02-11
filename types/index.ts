@@ -20,3 +20,7 @@ export function generateId(): string {
 export function now(): Date {
   return new Date()
 }
+
+export function isTempId(id: string): boolean {
+  return id.startsWith('temp-')
+}
