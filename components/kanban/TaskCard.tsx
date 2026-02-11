@@ -94,21 +94,21 @@ export default function TaskCard({ task, isOverlay = false }: TaskCardProps) {
       ref={setNodeRef}
       style={style}
       className={cn(
-        'group relative rounded-lg border bg-card p-4 shadow-sm transition-all hover:shadow-md pt-10',
-        isDragging && 'opacity-50',
-        isOverlay && 'shadow-xl scale-105'
+        'group relative rounded-lg border bg-card p-4 shadow-sm transition-shadow',
+        isDragging ? 'opacity-25' : 'hover:shadow-md',
+        isOverlay && 'shadow-xl scale-105 opacity-100 cursor-grabbing rotate-1 z-50'
       )}
     >
-      {/* Drag handle area - horizontal bar on top */}
+      {/* Drag handle area */}
       <div
-        className="absolute left-0 top-0 right-0 h-8 flex items-center justify-center touch-none cursor-grab active:cursor-grabbing z-10 hover:bg-muted/20 transition-colors rounded-t-lg"
+        className="absolute left-0 top-0 right-0 h-8 flex items-center justify-center touch-none cursor-grab active:cursor-grabbing z-10 hover:bg-muted/30 transition-colors rounded-t-lg"
         {...attributes}
         {...listeners}
       >
-        <div className="w-32 h-2 rounded-full bg-muted-foreground/40" />
+        <div className="w-32 h-1.5 rounded-full bg-muted-foreground/30 group-hover:bg-muted-foreground/50 transition-colors" />
       </div>
 
-      <div className="flex items-start justify-between">
+      <div className="pt-5 flex items-start justify-between">
         <div className="flex-1">
           <div className="flex items-center gap-2">
             {isTempId(task.id) ? (

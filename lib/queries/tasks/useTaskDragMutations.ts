@@ -31,62 +31,57 @@ export function useReorderTasks() {
       const version = ++optimisticVersion
 
       // Snapshot the previous value
-      const previousTasks = queryClient.getQueriesData<Task[]>({
-        queryKey: taskKeys.list({ projectId }),
-      })
+      const queryKey = taskKeys.list({ projectId })
+      const previousTasks = queryClient.getQueryData<Task[]>(queryKey)
+
+      if (!previousTasks) {
+        return { previousTasks: null, version, projectId }
+      }
+
+      if (startIndex === endIndex) {
+        return { previousTasks, version, projectId }
+      }
 
       // Optimistically reorder tasks in the specified column
-      previousTasks.forEach(([queryKey, tasks = []]) => {
-        const columnTasks = tasks.filter(task => task.status === status)
-        const otherTasks = tasks.filter(task => task.status !== status)
+      const columnTasks = previousTasks.filter(task => task.status === status)
+      const otherTasks = previousTasks.filter(task => task.status !== status)
 
-        if (startIndex === endIndex) {
-          return
-        }
+      // Reorder within column
+      const reorderedColumnTasks = [...columnTasks]
+      const [movedTask] = reorderedColumnTasks.splice(startIndex, 1)
+      reorderedColumnTasks.splice(endIndex, 0, movedTask)
 
-        // Reorder within column
-        const reorderedColumnTasks = [...columnTasks]
-        const [movedTask] = reorderedColumnTasks.splice(startIndex, 1)
-        reorderedColumnTasks.splice(endIndex, 0, movedTask)
+      // Update positions
+      const updatedColumnTasks = reorderedColumnTasks.map((task, index) => ({
+        ...task,
+        position: index + 1,
+      }))
 
-        // Update positions
-        const updatedColumnTasks = reorderedColumnTasks.map((task, index) => ({
-          ...task,
-          position: index + 1,
-        }))
+      // Combine back with other tasks
+      const updatedTasks = [...otherTasks, ...updatedColumnTasks]
+      queryClient.setQueryData(queryKey, updatedTasks)
 
-        // Combine back with other tasks
-        const updatedTasks = [...otherTasks, ...updatedColumnTasks]
-        queryClient.setQueryData(queryKey, updatedTasks)
-      })
-
-      return { previousTasks, version }
+      return { previousTasks, version, projectId }
     },
-    onSuccess: (data, variables, context) => {
-      // Only show success toast for the latest optimistic update
-      if (context?.version === optimisticVersion) {
-        toast.success('Task reordered successfully')
-      }
+    onSuccess: () => {
+      // Success toast is shown
     },
     onError: (err, variables, context) => {
       // Only rollback and show error for the latest optimistic update
       if (context?.version === optimisticVersion) {
         // Rollback on error
-        if (context.previousTasks) {
-          context.previousTasks.forEach(([queryKey, tasks]) => {
-            queryClient.setQueryData(queryKey, tasks)
-          })
+        if (context.previousTasks && context.projectId !== undefined) {
+          const queryKey = taskKeys.list({ projectId: context.projectId })
+          queryClient.setQueryData(queryKey, context.previousTasks)
         }
         toast.error('Failed to reorder task', {
           description: err instanceof Error ? err.message : 'An unknown error occurred'
         })
       }
     },
-    onSettled: (data, error, variables, context) => {
-      // Only refetch for the latest optimistic update
-      if (context?.version === optimisticVersion) {
-        queryClient.invalidateQueries({ queryKey: taskKeys.list({ projectId: variables.projectId ?? routeProjectId }) })
-      }
+    onSettled: () => {
+      // No refetch needed - the optimistic update is already in place
+      // and server should have the same data
     },
   })
 }
@@ -125,75 +120,71 @@ export function useMoveTaskBetweenColumns() {
       const version = ++optimisticVersion
 
       // Snapshot the previous value
-      const previousTasks = queryClient.getQueriesData<Task[]>({
-        queryKey: taskKeys.list({ projectId }),
-      })
+      const queryKey = taskKeys.list({ projectId })
+      const previousTasks = queryClient.getQueryData<Task[]>(queryKey)
+
+      if (!previousTasks) {
+        return { previousTasks: null, version, projectId }
+      }
 
       // Optimistically move task between columns
-      previousTasks.forEach(([queryKey, tasks = []]) => {
-        // Find the task being moved
-        const sourceTasks = tasks.filter(task => task.status === sourceStatus)
-        const destinationTasks = tasks.filter(task => task.status === destinationStatus)
-        const otherTasks = tasks.filter(
-          task => task.status !== sourceStatus && task.status !== destinationStatus
-        )
+      const sourceTasks = previousTasks.filter(task => task.status === sourceStatus)
+      const destinationTasks = previousTasks.filter(task => task.status === destinationStatus)
+      const otherTasks = previousTasks.filter(
+        task => task.status !== sourceStatus && task.status !== destinationStatus
+      )
 
-        const [movedTask] = sourceTasks.splice(sourceIndex, 1)
-        if (!movedTask) return
-
-        // Update task status and insert at destination position
-        movedTask.status = destinationStatus
-        destinationTasks.splice(destinationIndex, 0, movedTask)
-
-        // Update positions for source column
-        const updatedSourceTasks = sourceTasks.map((task, index) => ({
-          ...task,
-          position: index + 1,
-        }))
-
-        // Update positions for destination column
-        const updatedDestinationTasks = destinationTasks.map((task, index) => ({
-          ...task,
-          position: index + 1,
-        }))
-
-        // Combine all tasks
-        const updatedTasks = [
-          ...otherTasks,
-          ...updatedSourceTasks,
-          ...updatedDestinationTasks,
-        ]
-
-        queryClient.setQueryData(queryKey, updatedTasks)
-      })
-
-      return { previousTasks, version }
-    },
-    onSuccess: (data, variables, context) => {
-      // Only show success toast for the latest optimistic update
-      if (context?.version === optimisticVersion) {
-        toast.success('Task moved successfully')
+      const [movedTask] = sourceTasks.splice(sourceIndex, 1)
+      if (!movedTask) {
+        return { previousTasks, version, projectId }
       }
+
+      // Update task status and insert at destination position
+      const movedTaskWithNewStatus = { ...movedTask, status: destinationStatus }
+      destinationTasks.splice(destinationIndex, 0, movedTaskWithNewStatus)
+
+      // Update positions for source column
+      const updatedSourceTasks = sourceTasks.map((task, index) => ({
+        ...task,
+        position: index + 1,
+      }))
+
+      // Update positions for destination column
+      const updatedDestinationTasks = destinationTasks.map((task, index) => ({
+        ...task,
+        position: index + 1,
+      }))
+
+      // Combine all tasks
+      const updatedTasks = [
+        ...otherTasks,
+        ...updatedSourceTasks,
+        ...updatedDestinationTasks,
+      ]
+
+      queryClient.setQueryData(queryKey, updatedTasks)
+
+      return { previousTasks, version, projectId }
+    },
+    onSuccess: () => {
+      // Success toast is shown
     },
     onError: (err, variables, context) => {
       // Only rollback and show error for the latest optimistic update
       if (context?.version === optimisticVersion) {
         // Rollback on error
-        if (context.previousTasks) {
-          context.previousTasks.forEach(([queryKey, tasks]) => {
-            queryClient.setQueryData(queryKey, tasks)
-          })
+        if (context.previousTasks && context.projectId !== undefined) {
+          const queryKey = taskKeys.list({ projectId: context.projectId })
+          queryClient.setQueryData(queryKey, context.previousTasks)
         }
         toast.error('Failed to move task', {
           description: err instanceof Error ? err.message : 'An unknown error occurred'
         })
       }
     },
-    onSettled: (data, error, variables, context) => {
-      // Only refetch for the latest optimistic update
-      if (context?.version === optimisticVersion) {
-        queryClient.invalidateQueries({ queryKey: taskKeys.list({ projectId: variables.projectId ?? routeProjectId }) })
-      }
+    onSettled: () => {
+      // No refetch needed - the optimistic update is already in place
+      // and server should have the same data
     },
   })
 }
