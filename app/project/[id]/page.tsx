@@ -10,6 +10,7 @@ import KanbanBoard from "@/components/kanban/Board";
 import TodoList from "@/components/sidebar/TodoList";
 import NotesEditor from "@/components/notes/NotesEditor";
 import ProjectMembers from "@/components/project/ProjectMembers";
+import { AITaskInput } from "@/components/ai";
 import { AuthGuard } from "@/components/auth/AuthGuard";
 import {
   Skeleton,
@@ -80,9 +81,12 @@ export default function ProjectDetailPage() {
 
         {/* 主仪表板布局骨架图 */}
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-          {/* 侧边栏 - 极简骨架图 */}
+          {/* 左侧边栏 - Quick Tasks & Notes */}
           <div className="lg:col-span-1">
-            <MinimalSkeleton className="h-[500px] rounded-xl sticky top-16" />
+            <div className="sticky top-16 space-y-4">
+              <MinimalSkeleton className="h-[300px] rounded-xl" />
+              <MinimalSkeleton className="h-[200px] rounded-xl" />
+            </div>
           </div>
 
           {/* 看板区域 - 保持详细骨架图 */}
@@ -101,9 +105,9 @@ export default function ProjectDetailPage() {
             </div>
           </div>
 
-          {/* 笔记区域 - 极简骨架图 */}
+          {/* AI Task Split 区域 - 极简骨架图 */}
           <div className="lg:col-span-1">
-            <MinimalSkeleton className="h-[500px] rounded-xl sticky top-16" />
+            <MinimalSkeleton className="h-[300px] rounded-xl sticky top-16" />
           </div>
         </div>
       </div>
@@ -159,15 +163,25 @@ export default function ProjectDetailPage() {
 
         {/* Main dashboard layout */}
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-          {/* Sidebar with Todo List */}
+          {/* Left Sidebar - Quick Tasks & Notes */}
           <div className="lg:col-span-1">
-            <div className="sticky top-16">
+            <div className="sticky top-16 space-y-4">
+              {/* Quick Tasks */}
               <div className="rounded-xl border bg-card p-4 shadow-sm">
                 <h2 className="mb-4 text-lg font-semibold flex items-center gap-2">
                   <span className="h-2 w-2 rounded-full bg-neon-green" />
                   Quick Tasks
                 </h2>
                 <TodoList />
+              </div>
+
+              {/* Notes */}
+              <div className="rounded-xl border bg-card p-4 shadow-sm">
+                <h2 className="mb-4 text-lg font-semibold flex items-center gap-2">
+                  <span className="h-2 w-2 rounded-full bg-neon-purple" />
+                  Notes
+                </h2>
+                <NotesEditor />
               </div>
             </div>
           </div>
@@ -186,15 +200,15 @@ export default function ProjectDetailPage() {
             </div>
           </div>
 
-          {/* Notes Area */}
+          {/* AI Task Split Area */}
           <div className="lg:col-span-1">
             <div className="sticky top-16">
               <div className="rounded-xl border bg-card p-4 shadow-sm">
                 <h2 className="mb-4 text-lg font-semibold flex items-center gap-2">
-                  <span className="h-2 w-2 rounded-full bg-neon-purple" />
-                  Notes
+                  <span className="h-2 w-2 rounded-full bg-neon-green" />
+                  AI Task Split
                 </h2>
-                <NotesEditor />
+                <AITaskInput projectId={projectId} />
               </div>
             </div>
           </div>
