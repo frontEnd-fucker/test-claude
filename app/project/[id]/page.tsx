@@ -10,6 +10,7 @@ import KanbanBoard from "@/components/kanban/Board";
 import TodoList from "@/components/sidebar/TodoList";
 import NotesEditor from "@/components/notes/NotesEditor";
 import ProjectMembers from "@/components/project/ProjectMembers";
+import { AITaskInput } from "@/components/ai";
 import { AuthGuard } from "@/components/auth/AuthGuard";
 import {
   Skeleton,
@@ -153,6 +154,11 @@ export default function ProjectDetailPage() {
             {/* Members section */}
             <div className="mt-4 pt-4 border-t">
               <ProjectMembers projectId={projectId} compact />
+            </div>
+
+            {/* AI Task Input */}
+            <div className="mt-4 pt-4 border-t">
+              <AITaskInput projectId={projectId} />
             </div>
           </div>
         </div>
