@@ -3,7 +3,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useParams } from 'next/navigation'
 import { taskKeys } from './query-keys'
-import { createTask, updateTask, deleteTask } from './api'
+import { createTask, updateTask, deleteTask, createTasksBatch } from './api'
 import { Task, TaskStatus, PriorityLevel } from '@/types/database'
 import { toast } from 'sonner'
 
@@ -269,6 +269,125 @@ export function useDeleteTask() {
     },
     onSettled: () => {
       // Always refetch after error or success
+      queryClient.invalidateQueries({ queryKey: taskKeys.all })
+    },
+  })
+}
+
+export function useCreateTasksBatch() {
+  const queryClient = useQueryClient()
+  const params = useParams()
+  const routeProjectId = params.id as string | undefined
+
+  return useMutation({
+    mutationFn: (tasks: Array<{
+      title: string
+      description?: string
+      priority?: PriorityLevel
+      status?: TaskStatus
+      projectId?: string
+    }>) => createTasksBatch(
+      tasks.map(t => ({
+        ...t,
+        projectId: t.projectId ?? routeProjectId,
+      }))
+    ),
+    onMutate: async (tasks) => {
+      // Cancel any outgoing refetches
+      await queryClient.cancelQueries({ queryKey: taskKeys.all })
+
+      // Snapshot the previous value
+      const previousTasks = queryClient.getQueriesData({
+        queryKey: taskKeys.all,
+      })
+
+      // Optimistically create multiple tasks
+      const optimisticTasks: Task[] = tasks.map((task, index) => ({
+        id: `temp-${Date.now()}-${index}`,
+        title: task.title,
+        description: task.description,
+        status: (task.status || 'todo') as TaskStatus,
+        priority: task.priority as PriorityLevel,
+        position: index + 1,
+        userId: 'temp-user',
+        projectId: task.projectId ?? routeProjectId ?? '',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      }))
+
+      // Update all task lists
+      previousTasks.forEach(([queryKey, data]) => {
+        if (!data) return
+
+        if (Array.isArray(data)) {
+          const updatedTasks = [...data, ...optimisticTasks]
+          queryClient.setQueryData(queryKey, updatedTasks)
+        }
+      })
+
+      return { previousTasks, optimisticTaskIds: optimisticTasks.map(t => t.id) }
+    },
+    onError: (err, variables, context) => {
+      toast.error('Failed to create tasks', {
+        description: err instanceof Error ? err.message : 'Please try again',
+      })
+
+      // Remove temporary tasks from cache
+      if (context?.optimisticTaskIds) {
+        const allQueries = queryClient.getQueriesData<Task | Task[]>({
+          queryKey: taskKeys.all,
+        })
+
+        allQueries.forEach(([queryKey, queryData]) => {
+          if (Array.isArray(queryData)) {
+            const updatedTasks = queryData.filter(
+              task => !context.optimisticTaskIds.includes(task.id)
+            )
+            queryClient.setQueryData(queryKey, updatedTasks)
+          }
+        })
+      }
+
+      // Rollback
+      if (context?.previousTasks) {
+        context.previousTasks.forEach(([queryKey, tasks]) => {
+          queryClient.setQueryData(queryKey, tasks)
+        })
+      }
+    },
+    onSuccess: (data, variables, context) => {
+      // Replace optimistic tasks with real ones
+      if (context?.optimisticTaskIds) {
+        const allQueries = queryClient.getQueriesData<Task | Task[]>({
+          queryKey: taskKeys.all,
+        })
+
+        allQueries.forEach(([queryKey, queryData]) => {
+          if (Array.isArray(queryData)) {
+            let updatedTasks = [...queryData]
+
+            // Remove all optimistic tasks
+            updatedTasks = updatedTasks.filter(
+              task => !context.optimisticTaskIds.includes(task.id)
+            )
+
+            // Add real tasks
+            updatedTasks = [...updatedTasks, ...data]
+
+            // Remove duplicates
+            const seenIds = new Set<string>()
+            updatedTasks = updatedTasks.filter(task => {
+              if (seenIds.has(task.id)) return false
+              seenIds.add(task.id)
+              return true
+            })
+
+            queryClient.setQueryData(queryKey, updatedTasks)
+          }
+        })
+      }
+    },
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: taskKeys.all })
     },
   })

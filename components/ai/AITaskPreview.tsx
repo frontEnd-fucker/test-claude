@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { X, Plus, Trash2, GripVertical } from 'lucide-react'
-import { useCreateTask } from '@/lib/queries/tasks/useTaskMutations'
+import { useCreateTasksBatch } from '@/lib/queries/tasks/useTaskMutations'
 import { TaskSuggestion } from '@/lib/ai/miniMax'
 import { cn } from '@/lib/utils'
 
@@ -29,7 +29,7 @@ export function AITaskPreview({
     }))
   )
   const [isAdding, setIsAdding] = useState(false)
-  const createTask = useCreateTask()
+  const createTasksBatch = useCreateTasksBatch()
 
   const updateTask = (id: string, field: keyof TaskSuggestion, value: string) => {
     setEditedTasks((prev) =>
@@ -48,15 +48,16 @@ export function AITaskPreview({
 
     setIsAdding(true)
     try {
-      for (const task of editedTasks) {
-        await createTask.mutateAsync({
+      // Batch create all tasks in a single request
+      await createTasksBatch.mutateAsync(
+        editedTasks.map(task => ({
           title: task.title,
           description: task.description,
           priority: task.priority,
           status: 'todo',
           projectId,
-        })
-      }
+        }))
+      )
       onTasksAdded()
     } catch (error) {
       console.error('Failed to add tasks:', error)
