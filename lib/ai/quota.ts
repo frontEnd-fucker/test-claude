@@ -52,7 +52,7 @@ export async function getUserQuota(userId: string): Promise<UserQuota> {
     .from('ai_quota')
     .select('daily_limit')
     .eq('user_id', userId)
-    .single()
+    .maybeSingle()
 
   const dailyLimit = quota?.daily_limit ?? getDefaultDailyLimit()
 
@@ -63,7 +63,7 @@ export async function getUserQuota(userId: string): Promise<UserQuota> {
     .select('used_tokens')
     .eq('user_id', userId)
     .eq('used_date', today)
-    .single()
+    .maybeSingle()
 
   const usedToday = usage?.used_tokens ?? 0
 
