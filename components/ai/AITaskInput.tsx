@@ -14,7 +14,8 @@ interface AITaskInputProps {
   projectId: string
 }
 
-const QUOTA_WARNING_THRESHOLD = 5000 // 剩余配额低于此值显示警告
+// Get quota warning threshold from environment variable, default to 5000
+const QUOTA_WARNING_THRESHOLD = parseInt(process.env.NEXT_PUBLIC_AI_QUOTA_WARNING_THRESHOLD || '5000', 10)
 
 export function AITaskInput({ projectId }: AITaskInputProps) {
   const [input, setInput] = useState('')

@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { cookies } from 'next/headers'
 import { createClient } from '@/lib/supabase/server-client'
 import { decomposeTask, MAX_INPUT_LENGTH } from '@/lib/ai/deepseek'
 import { checkAndUseQuota, recordUsage } from '@/lib/ai/quota'

@@ -13,11 +13,27 @@ export interface UsageRecord {
   usedDate: string
 }
 
-// 默认每日配额（tokens）
+// Default daily limit (tokens) - can be overridden per user
 const DEFAULT_DAILY_LIMIT = 50000
 
+// Get daily limit from environment or use default
+export function getDefaultDailyLimit(): number {
+  if (typeof process !== 'undefined' && process.env.AI_DAILY_QUOTA_LIMIT) {
+    return parseInt(process.env.AI_DAILY_QUOTA_LIMIT, 10)
+  }
+  return DEFAULT_DAILY_LIMIT
+}
+
+// Get quota warning threshold from environment
+export function getQuotaWarningThreshold(): number {
+  if (typeof process !== 'undefined' && process.env.AI_QUOTA_WARNING_THRESHOLD) {
+    return parseInt(process.env.AI_QUOTA_WARNING_THRESHOLD, 10)
+  }
+  return 5000
+}
+
 /**
- * 创建 admin client（使用 service role，绕过 RLS）
+ * Create admin client (using service role to bypass RLS)
  */
 async function createAdminSupabase() {
   const config = getSupabaseConfig()
@@ -25,21 +41,22 @@ async function createAdminSupabase() {
 }
 
 /**
- * 获取用户的 AI 使用配额信息（使用 admin client）
+ * Get user's AI quota info (using admin client)
+ * Uses UTC date to avoid timezone issues
  */
 export async function getUserQuota(userId: string): Promise<UserQuota> {
   const supabase = await createAdminSupabase()
 
-  // 获取用户配额设置
+  // Get user's quota setting
   const { data: quota } = await supabase
     .from('ai_quota')
     .select('daily_limit')
     .eq('user_id', userId)
     .single()
 
-  const dailyLimit = quota?.daily_limit ?? DEFAULT_DAILY_LIMIT
+  const dailyLimit = quota?.daily_limit ?? getDefaultDailyLimit()
 
-  // 获取今日使用量
+  // Get today's usage using UTC date
   const today = new Date().toISOString().split('T')[0]
   const { data: usage } = await supabase
     .from('ai_usage')
@@ -58,10 +75,10 @@ export async function getUserQuota(userId: string): Promise<UserQuota> {
 }
 
 /**
- * 检查并使用配额
- * @param userId 用户 ID
- * @param tokensNeeded 需要的 tokens 数量
- * @returns 配额检查结果，如果失败则抛出错误
+ * Check and use quota
+ * @param userId User ID
+ * @param tokensNeeded Tokens needed
+ * @throws Error if quota is insufficient
  */
 export async function checkAndUseQuota(
   userId: string,
@@ -71,7 +88,7 @@ export async function checkAndUseQuota(
 
   if (quota.remaining < tokensNeeded) {
     const error = new Error(
-      `AI 配额不足：今日已使用 ${quota.usedToday}/${quota.dailyLimit} tokens，剩余 ${quota.remaining} tokens`
+      `AI quota insufficient: used ${quota.usedToday}/${quota.dailyLimit} tokens today, ${quota.remaining} remaining`
     )
     ;(error as { statusCode?: number }).statusCode = 429
     throw error
@@ -79,38 +96,25 @@ export async function checkAndUseQuota(
 }
 
 /**
- * 记录 AI 使用量（使用 admin client 绕过 RLS）
- * @param userId 用户 ID
- * @param tokensUsed 使用的 tokens 数量
+ * Record AI usage (atomic operation to prevent race conditions)
+ * Uses raw SQL upsert to ensure atomic increment
+ * @param userId User ID
+ * @param tokensUsed Tokens used
  */
 export async function recordUsage(userId: string, tokensUsed: number): Promise<void> {
   const supabase = await createAdminSupabase()
   const today = new Date().toISOString().split('T')[0]
 
-  // 先查询今日是否有记录
-  const { data: existing } = await supabase
-    .from('ai_usage')
-    .select('id, used_tokens')
-    .eq('user_id', userId)
-    .eq('used_date', today)
-    .single()
+  // Use raw SQL for atomic upsert to prevent race conditions
+  const { error } = await supabase.rpc('increment_ai_usage', {
+    p_user_id: userId,
+    p_tokens: tokensUsed,
+    p_date: today,
+  })
 
-  if (existing) {
-    // 更新现有记录（累加）
-    await supabase
-      .from('ai_usage')
-      .update({
-        used_tokens: existing.used_tokens + tokensUsed,
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', existing.id)
-  } else {
-    // 创建新记录
-    await supabase.from('ai_usage').insert({
-      user_id: userId,
-      used_tokens: tokensUsed,
-      used_date: today,
-    })
+  if (error) {
+    console.error('Failed to record AI usage:', error)
+    throw error
   }
 }
 
