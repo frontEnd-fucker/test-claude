@@ -6,6 +6,17 @@ export interface TaskSuggestion {
   priority: PriorityLevel
 }
 
+export interface DecomposeResult {
+  tasks: TaskSuggestion[]
+  tokensUsed: number
+}
+
+// 输入最大长度
+export const MAX_INPUT_LENGTH = 2000
+
+// 输出最大 tokens
+export const MAX_OUTPUT_TOKENS = 1000
+
 interface DeepSeekMessage {
   role: 'system' | 'user' | 'assistant'
   content: string
@@ -50,7 +61,7 @@ const SYSTEM_PROMPT = `你是一个项目管理专家。用户会描述一个需
 
 注意：priority 只能是 high、medium 或 low 三个值之一。`
 
-export async function decomposeTask(userInput: string): Promise<TaskSuggestion[]> {
+export async function decomposeTask(userInput: string): Promise<DecomposeResult> {
   const apiKey = process.env.DEEPSEEK_API_KEY
 
   if (!apiKey) {
@@ -70,6 +81,7 @@ export async function decomposeTask(userInput: string): Promise<TaskSuggestion[]
         { role: 'user', content: userInput },
       ] as DeepSeekMessage[],
       temperature: 0.7,
+      max_tokens: MAX_OUTPUT_TOKENS,
     }),
   })
 
@@ -105,13 +117,18 @@ export async function decomposeTask(userInput: string): Promise<TaskSuggestion[]
       throw new Error('Response is not an array')
     }
 
-    return tasks.map(task => ({
+    const parsedTasks = tasks.map(task => ({
       title: task.title || '未命名任务',
       description: task.description || '',
       priority: ['high', 'medium', 'low'].includes(task.priority || '')
         ? task.priority as PriorityLevel
         : 'medium',
     }))
+
+    return {
+      tasks: parsedTasks,
+      tokensUsed: data.usage?.total_tokens || 0,
+    }
   } catch (parseError) {
     console.error('Failed to parse DeepSeek response:', content)
     throw new Error('Failed to parse AI response')
