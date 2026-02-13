@@ -42,19 +42,19 @@ $$ LANGUAGE plpgsql;
 ALTER TABLE ai_usage ENABLE ROW LEVEL SECURITY;
 ALTER TABLE ai_quota ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY IF NOT EXISTS "Users can view own ai_usage"
+CREATE POLICY "Users can view own ai_usage"
   ON ai_usage FOR SELECT
   USING (auth.uid() = user_id);
 
-CREATE POLICY IF NOT EXISTS "Users can view own ai_quota"
+CREATE POLICY "Users can view own ai_quota"
   ON ai_quota FOR SELECT
   USING (auth.uid() = user_id);
 
-CREATE POLICY IF NOT EXISTS "System can manage own ai_usage"
+CREATE POLICY "System can manage own ai_usage"
   ON ai_usage FOR ALL
   USING (auth.uid() = user_id);
 
-CREATE POLICY IF NOT EXISTS "System can manage own ai_quota"
+CREATE POLICY "System can manage own ai_quota"
   ON ai_quota FOR ALL
   USING (auth.uid() = user_id);
 

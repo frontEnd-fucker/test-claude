@@ -30,7 +30,7 @@ CREATE INDEX IF NOT EXISTS idx_project_members_project_user ON project_members(p
 ALTER TABLE project_members ENABLE ROW LEVEL SECURITY;
 
 -- Policy: Users can view members of projects they belong to
-CREATE POLICY IF NOT EXISTS "Users can view members of projects they belong to"
+CREATE POLICY "Users can view members of projects they belong to"
   ON project_members FOR SELECT
   USING (
     EXISTS (
@@ -41,7 +41,7 @@ CREATE POLICY IF NOT EXISTS "Users can view members of projects they belong to"
   );
 
 -- Policy: Project owners and admins can manage members
-CREATE POLICY IF NOT EXISTS "Project owners and admins can manage members"
+CREATE POLICY "Project owners and admins can manage members"
   ON project_members FOR ALL
   USING (
     EXISTS (
@@ -64,7 +64,7 @@ CREATE POLICY IF NOT EXISTS "Project owners and admins can manage members"
 
 -- Update projects table policy to allow project members to view
 DROP POLICY IF EXISTS "Users can access their own projects" ON projects;
-CREATE POLICY IF NOT EXISTS "Users can access projects they belong to"
+CREATE POLICY "Users can access projects they belong to"
   ON projects FOR ALL
   USING (
     auth.uid() = user_id OR
@@ -78,7 +78,7 @@ CREATE POLICY IF NOT EXISTS "Users can access projects they belong to"
 
 -- Update tasks table policy to allow project members to access
 DROP POLICY IF EXISTS "Users can access their own tasks" ON tasks;
-CREATE POLICY IF NOT EXISTS "Users can access tasks in projects they belong to"
+CREATE POLICY "Users can access tasks in projects they belong to"
   ON tasks FOR ALL
   USING (
     auth.uid() = user_id OR
@@ -92,7 +92,7 @@ CREATE POLICY IF NOT EXISTS "Users can access tasks in projects they belong to"
 
 -- Update todos table policy to allow project members to access
 DROP POLICY IF EXISTS "Users can access their own todos" ON todos;
-CREATE POLICY IF NOT EXISTS "Users can access todos in projects they belong to"
+CREATE POLICY "Users can access todos in projects they belong to"
   ON todos FOR ALL
   USING (
     auth.uid() = user_id OR
@@ -106,7 +106,7 @@ CREATE POLICY IF NOT EXISTS "Users can access todos in projects they belong to"
 
 -- Update notes table policy to allow project members to access
 DROP POLICY IF EXISTS "Users can access their own notes" ON notes;
-CREATE POLICY IF NOT EXISTS "Users can access notes in projects they belong to"
+CREATE POLICY "Users can access notes in projects they belong to"
   ON notes FOR ALL
   USING (
     auth.uid() = user_id OR
@@ -119,7 +119,7 @@ CREATE POLICY IF NOT EXISTS "Users can access notes in projects they belong to"
   );
 
 -- Add policy for users to view tasks assigned to them
-CREATE POLICY IF NOT EXISTS "Users can view tasks assigned to them"
+CREATE POLICY "Users can view tasks assigned to them"
   ON tasks FOR SELECT
   USING (
     auth.uid() = assignee_id AND

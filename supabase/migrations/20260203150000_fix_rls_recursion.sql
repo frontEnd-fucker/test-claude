@@ -80,19 +80,19 @@ $$;
 
 -- Update project_members RLS policies to use the functions
 DROP POLICY IF EXISTS "Users can view members of projects they belong to" ON project_members;
-CREATE POLICY IF NOT EXISTS "Users can view members of projects they belong to"
+CREATE POLICY "Users can view members of projects they belong to"
   ON project_members FOR SELECT
   USING (can_view_project_members(project_id, auth.uid()));
 
 DROP POLICY IF EXISTS "Project owners and admins can manage members" ON project_members;
-CREATE POLICY IF NOT EXISTS "Project owners and admins can manage members"
+CREATE POLICY "Project owners and admins can manage members"
   ON project_members FOR ALL
   USING (can_manage_project_members(project_id, auth.uid()))
   WITH CHECK (can_manage_project_members(project_id, auth.uid()));
 
 -- Update projects table RLS policy to use function (ensure consistency)
 DROP POLICY IF EXISTS "Users can access projects they belong to" ON projects;
-CREATE POLICY IF NOT EXISTS "Users can access projects they belong to"
+CREATE POLICY "Users can access projects they belong to"
   ON projects FOR ALL
   USING (
     auth.uid() = user_id OR
