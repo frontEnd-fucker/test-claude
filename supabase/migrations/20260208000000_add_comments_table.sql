@@ -35,6 +35,7 @@ CREATE INDEX IF NOT EXISTS idx_comments_created_at ON comments(created_at DESC);
 ALTER TABLE comments ENABLE ROW LEVEL SECURITY;
 
 -- Policy for viewing comments: project members can view comments
+DROP POLICY IF EXISTS "Project members can view comments" ON comments;
 CREATE POLICY "Project members can view comments" ON comments
   FOR SELECT USING (
     EXISTS (
@@ -49,6 +50,7 @@ CREATE POLICY "Project members can view comments" ON comments
   );
 
 -- Policy for creating comments: owner/admin/member can create, viewer cannot
+DROP POLICY IF EXISTS "Project members can create comments" ON comments;
 CREATE POLICY "Project members can create comments" ON comments
   FOR INSERT WITH CHECK (
     EXISTS (
@@ -64,6 +66,7 @@ CREATE POLICY "Project members can create comments" ON comments
   );
 
 -- Policy for updating comments: users can only update their own comments
+DROP POLICY IF EXISTS "Users can update their own comments" ON comments;
 CREATE POLICY "Users can update their own comments" ON comments
   FOR UPDATE USING (
     user_id = auth.uid()
@@ -72,6 +75,7 @@ CREATE POLICY "Users can update their own comments" ON comments
   );
 
 -- Policy for deleting comments: comment author or project admin/owner can delete
+DROP POLICY IF EXISTS "Comment author or project admin can delete comments" ON comments;
 CREATE POLICY "Comment author or project admin can delete comments" ON comments
   FOR DELETE USING (
     user_id = auth.uid() OR
@@ -97,6 +101,7 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- Trigger to automatically update updated_at
+DROP TRIGGER IF EXISTS update_comments_updated_at ON comments;
 CREATE TRIGGER update_comments_updated_at
   BEFORE UPDATE ON comments
   FOR EACH ROW

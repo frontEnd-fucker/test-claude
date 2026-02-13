@@ -1,6 +1,4 @@
 import { createClient } from '@/lib/supabase/server-client'
-import { createClient as createAdminClient } from '@supabase/supabase-js'
-import { getSupabaseConfig } from '@/lib/supabase/config'
 
 export interface UserQuota {
   dailyLimit: number
@@ -33,19 +31,11 @@ export function getQuotaWarningThreshold(): number {
 }
 
 /**
- * Create admin client (using service role to bypass RLS)
- */
-async function createAdminSupabase() {
-  const config = getSupabaseConfig()
-  return createAdminClient(config.url, config.serviceRoleKey!)
-}
-
-/**
- * Get user's AI quota info (using admin client)
+ * Get user's AI quota info
  * Uses UTC date to avoid timezone issues
  */
 export async function getUserQuota(userId: string): Promise<UserQuota> {
-  const supabase = await createAdminSupabase()
+  const supabase = await createClient()
 
   // Get user's quota setting
   const { data: quota } = await supabase
@@ -102,7 +92,7 @@ export async function checkAndUseQuota(
  * @param tokensUsed Tokens used
  */
 export async function recordUsage(userId: string, tokensUsed: number): Promise<void> {
-  const supabase = await createAdminSupabase()
+  const supabase = await createClient()
   const today = new Date().toISOString().split('T')[0]
 
   // Use raw SQL for atomic upsert to prevent race conditions
@@ -129,7 +119,7 @@ export function isQuotaExceeded(error: unknown): boolean {
 }
 
 /**
- * 创建或初始化用户配额记录（使用 admin client 绕过 RLS）
+ * 创建或初始化用户配额记录
  * @param userId 用户 ID
  * @param dailyLimit 每日限额（可选）
  */
@@ -137,7 +127,7 @@ export async function initializeUserQuota(
   userId: string,
   dailyLimit: number = DEFAULT_DAILY_LIMIT
 ): Promise<void> {
-  const supabase = await createAdminSupabase()
+  const supabase = await createClient()
 
   await supabase.from('ai_quota').upsert(
     {
@@ -149,10 +139,10 @@ export async function initializeUserQuota(
 }
 
 /**
- * 获取今日使用量记录（使用 admin client）
+ * 获取今日使用量记录
  */
 export async function getTodayUsage(userId: string): Promise<UsageRecord | null> {
-  const supabase = await createAdminSupabase()
+  const supabase = await createClient()
   const today = new Date().toISOString().split('T')[0]
 
   const { data } = await supabase

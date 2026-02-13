@@ -30,6 +30,7 @@ CREATE INDEX IF NOT EXISTS idx_project_members_project_user ON project_members(p
 ALTER TABLE project_members ENABLE ROW LEVEL SECURITY;
 
 -- Policy: Users can view members of projects they belong to
+DROP POLICY IF EXISTS "Users can view members of projects they belong to" ON project_members;
 CREATE POLICY "Users can view members of projects they belong to"
   ON project_members FOR SELECT
   USING (
@@ -41,6 +42,7 @@ CREATE POLICY "Users can view members of projects they belong to"
   );
 
 -- Policy: Project owners and admins can manage members
+DROP POLICY IF EXISTS "Project owners and admins can manage members" ON project_members;
 CREATE POLICY "Project owners and admins can manage members"
   ON project_members FOR ALL
   USING (
@@ -63,7 +65,7 @@ CREATE POLICY "Project owners and admins can manage members"
 -- Update existing tables RLS policies to allow project members access
 
 -- Update projects table policy to allow project members to view
-DROP POLICY IF EXISTS "Users can access their own projects" ON projects;
+DROP POLICY IF EXISTS "Users can access projects they belong to" ON projects;
 CREATE POLICY "Users can access projects they belong to"
   ON projects FOR ALL
   USING (
@@ -77,7 +79,7 @@ CREATE POLICY "Users can access projects they belong to"
   );
 
 -- Update tasks table policy to allow project members to access
-DROP POLICY IF EXISTS "Users can access their own tasks" ON tasks;
+DROP POLICY IF EXISTS "Users can access tasks in projects they belong to" ON tasks;
 CREATE POLICY "Users can access tasks in projects they belong to"
   ON tasks FOR ALL
   USING (
@@ -91,7 +93,7 @@ CREATE POLICY "Users can access tasks in projects they belong to"
   );
 
 -- Update todos table policy to allow project members to access
-DROP POLICY IF EXISTS "Users can access their own todos" ON todos;
+DROP POLICY IF EXISTS "Users can access todos in projects they belong to" ON todos;
 CREATE POLICY "Users can access todos in projects they belong to"
   ON todos FOR ALL
   USING (
@@ -105,7 +107,7 @@ CREATE POLICY "Users can access todos in projects they belong to"
   );
 
 -- Update notes table policy to allow project members to access
-DROP POLICY IF EXISTS "Users can access their own notes" ON notes;
+DROP POLICY IF EXISTS "Users can access notes in projects they belong to" ON notes;
 CREATE POLICY "Users can access notes in projects they belong to"
   ON notes FOR ALL
   USING (
@@ -119,6 +121,7 @@ CREATE POLICY "Users can access notes in projects they belong to"
   );
 
 -- Add policy for users to view tasks assigned to them
+DROP POLICY IF EXISTS "Users can view tasks assigned to them" ON tasks;
 CREATE POLICY "Users can view tasks assigned to them"
   ON tasks FOR SELECT
   USING (
