@@ -20,11 +20,13 @@ CREATE INDEX IF NOT EXISTS idx_profiles_name ON public.profiles(name);
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 
 -- Policy: Users can view all profiles (for user search functionality)
+DROP POLICY IF EXISTS "Users can view all profiles" ON public.profiles;
 CREATE POLICY "Users can view all profiles"
   ON public.profiles FOR SELECT
   USING (true);
 
 -- Policy: Users can update their own profile
+DROP POLICY IF EXISTS "Users can update own profile" ON public.profiles;
 CREATE POLICY "Users can update own profile"
   ON public.profiles FOR UPDATE
   USING (auth.uid() = id)
