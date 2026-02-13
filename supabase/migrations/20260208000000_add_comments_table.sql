@@ -35,7 +35,7 @@ CREATE INDEX IF NOT EXISTS idx_comments_created_at ON comments(created_at DESC);
 ALTER TABLE comments ENABLE ROW LEVEL SECURITY;
 
 -- Policy for viewing comments: project members can view comments
-CREATE POLICY "Project members can view comments" ON comments
+CREATE POLICY IF NOT EXISTS "Project members can view comments" ON comments
   FOR SELECT USING (
     EXISTS (
       SELECT 1 FROM project_members pm
@@ -49,7 +49,7 @@ CREATE POLICY "Project members can view comments" ON comments
   );
 
 -- Policy for creating comments: owner/admin/member can create, viewer cannot
-CREATE POLICY "Project members can create comments" ON comments
+CREATE POLICY IF NOT EXISTS "Project members can create comments" ON comments
   FOR INSERT WITH CHECK (
     EXISTS (
       SELECT 1 FROM project_members pm
@@ -64,7 +64,7 @@ CREATE POLICY "Project members can create comments" ON comments
   );
 
 -- Policy for updating comments: users can only update their own comments
-CREATE POLICY "Users can update their own comments" ON comments
+CREATE POLICY IF NOT EXISTS "Users can update their own comments" ON comments
   FOR UPDATE USING (
     user_id = auth.uid()
   ) WITH CHECK (
@@ -72,7 +72,7 @@ CREATE POLICY "Users can update their own comments" ON comments
   );
 
 -- Policy for deleting comments: comment author or project admin/owner can delete
-CREATE POLICY "Comment author or project admin can delete comments" ON comments
+CREATE POLICY IF NOT EXISTS "Comment author or project admin can delete comments" ON comments
   FOR DELETE USING (
     user_id = auth.uid() OR
     EXISTS (

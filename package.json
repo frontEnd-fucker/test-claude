@@ -21,6 +21,7 @@
     "supabase:stop": "supabase stop",
     "supabase:status": "supabase status",
     "supabase:reset": "supabase db reset --local",
+    "supabase:push:public": "supabase db push --project-ref ksbfxyehciksotcteqtc",
     "dev:local": "supabase start && npm run dev",
     "db:local:types": "supabase gen types typescript --local --schema public > lib/supabase/types.ts"
   },

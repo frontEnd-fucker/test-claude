@@ -75,19 +75,19 @@ ALTER TABLE notes ENABLE ROW LEVEL SECURITY;
 
 -- Create RLS policies
 -- Users can only access their own projects
-CREATE POLICY "Users can access their own projects"
+CREATE POLICY IF NOT EXISTS "Users can access their own projects"
   ON projects FOR ALL USING (auth.uid() = user_id);
 
 -- Users can only access their own tasks
-CREATE POLICY "Users can access their own tasks"
+CREATE POLICY IF NOT EXISTS "Users can access their own tasks"
   ON tasks FOR ALL USING (auth.uid() = user_id);
 
 -- Users can only access their own todos
-CREATE POLICY "Users can access their own todos"
+CREATE POLICY IF NOT EXISTS "Users can access their own todos"
   ON todos FOR ALL USING (auth.uid() = user_id);
 
 -- Users can only access their own notes
-CREATE POLICY "Users can access their own notes"
+CREATE POLICY IF NOT EXISTS "Users can access their own notes"
   ON notes FOR ALL USING (auth.uid() = user_id);
 
 -- Optional: Allow users to view tasks assigned to them even if not owner

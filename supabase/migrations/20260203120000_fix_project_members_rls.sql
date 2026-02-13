@@ -5,7 +5,7 @@
 -- Update SELECT policy: Users can view members of projects they belong to
 -- Allow users who are in project_members OR are the project owner in projects table
 DROP POLICY IF EXISTS "Users can view members of projects they belong to" ON project_members;
-CREATE POLICY "Users can view members of projects they belong to"
+CREATE POLICY IF NOT EXISTS "Users can view members of projects they belong to"
   ON project_members FOR SELECT
   USING (
     EXISTS (
@@ -24,7 +24,7 @@ CREATE POLICY "Users can view members of projects they belong to"
 -- Update ALL policy: Project owners and admins can manage members
 -- Allow users who are owner/admin in project_members OR are the project owner in projects table
 DROP POLICY IF EXISTS "Project owners and admins can manage members" ON project_members;
-CREATE POLICY "Project owners and admins can manage members"
+CREATE POLICY IF NOT EXISTS "Project owners and admins can manage members"
   ON project_members FOR ALL
   USING (
     EXISTS (
