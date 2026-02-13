@@ -19,8 +19,6 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const { userInput } = body
 
-    console.log('[AI API] Received request:', { userInput: userInput?.substring(0, 100) })
-
     if (!userInput || typeof userInput !== 'string') {
       return NextResponse.json(
         { error: 'userInput is required and must be a string' },
@@ -56,8 +54,6 @@ export async function POST(request: NextRequest) {
     if (result.tokensUsed > 0) {
       await recordUsage(user.id, result.tokensUsed)
     }
-
-    console.log('[AI API] Successfully decomposed task, count:', result.tasks.length)
 
     return NextResponse.json({ tasks: result.tasks })
   } catch (error) {
