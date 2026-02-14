@@ -36,7 +36,7 @@ function CommentItemInner({
   // 使用传入的 member 信息，避免重复查询
   // member.id 是当前登录用户的 ID，comment.userId 是评论作者的 ID
   const isAuthor = comment.userId === member?.id
-  const canDelete = canDeleteComments(isAuthor, member)
+  const canDelete = canDeleteComments(isAuthor, member ?? null)
   const canEdit = isAuthor
 
   const handleSaveEdit = () => {
