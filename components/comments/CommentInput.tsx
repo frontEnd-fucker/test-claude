@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef } from 'react'
+import { useRef } from 'react'
 
 interface CommentInputProps {
   placeholder?: string
@@ -31,12 +31,6 @@ export function CommentInput({
       }
     }
   }
-
-  useEffect(() => {
-    if (replyPrefix && inputRef?.current) {
-      inputRef.current.focus()
-    }
-  }, [replyPrefix, inputRef])
 
   return (
     <div className="mb-6">

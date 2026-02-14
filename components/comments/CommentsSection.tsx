@@ -34,6 +34,7 @@ export function CommentsSection({ taskId, projectId }: CommentsSectionProps) {
   const handleReply = (comment: Comment, user: NonNullable<Comment['user']>) => {
     setReplyingTo({ comment, user })
     setInputValue('')
+    inputRef.current?.focus()
   }
 
   const handleCancelReply = () => {
