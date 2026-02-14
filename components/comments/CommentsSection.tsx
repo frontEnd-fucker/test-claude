@@ -4,7 +4,7 @@ import { useState, useRef } from 'react'
 import { Comment, InsertComment } from '@/types/database'
 import { useComments, useCreateComment } from '@/lib/queries/comments'
 import { useProjectMember } from '@/lib/queries/members'
-import { canCreateComments } from '@/lib/permissions/project'
+import { canCreateComments, canDeleteComments } from '@/lib/permissions/project'
 import { CommentInput } from './CommentInput'
 import { CommentList } from './CommentList'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -26,7 +26,7 @@ export function CommentsSection({ taskId, projectId }: CommentsSectionProps) {
   } | null>(null)
   const [inputValue, setInputValue] = useState('')
 
-  // Fetch user's project member info for permissions (only if projectId is available)
+  // 统一获取用户 member 信息，避免每个 CommentItem 重复查询
   const { data: member, isLoading: memberLoading } = useProjectMember(projectId)
   const canCreate = canCreateComments(member || null)
 
@@ -128,6 +128,7 @@ export function CommentsSection({ taskId, projectId }: CommentsSectionProps) {
         comments={comments}
         onReply={handleReply}
         canCreate={canCreate}
+        member={member}
       />
     </div>
   )

@@ -1,9 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, memo } from 'react'
 import { Comment } from '@/types/database'
 import { useUpdateComment, useDeleteComment } from '@/lib/queries/comments'
-import { useProjectMember } from '@/lib/queries/members'
 import { canDeleteComments } from '@/lib/permissions/project'
 import { formatTimeAgo } from '@/lib/utils'
 import { MessageSquare, Edit, Trash2, Check, X, Loader2 } from 'lucide-react'
@@ -14,24 +13,24 @@ interface CommentItemProps {
   isReply?: boolean
   onReply?: (comment: Comment, user: NonNullable<Comment['user']>) => void
   canCreate?: boolean
+  member?: Comment['user'] extends infer T ? T extends null | undefined ? never : T : never
 }
 
-export function CommentItem({
+function CommentItemInner({
   comment,
   user,
   isReply = false,
   onReply,
   canCreate = false,
+  member,
 }: CommentItemProps) {
   const [isEditing, setIsEditing] = useState(false)
   const [editContent, setEditContent] = useState(comment.content)
 
-  // Fetch user's project member info for permissions
-  const { data: member } = useProjectMember(comment.projectId)
-
   const updateCommentMutation = useUpdateComment()
   const deleteCommentMutation = useDeleteComment()
 
+  // 使用传入的 member 信息，避免重复查询
   const isAuthor = comment.userId === member?.userId
   const canDelete = canDeleteComments(isAuthor, member || null)
   const canEdit = isAuthor
@@ -184,5 +183,8 @@ export function CommentItem({
     </div>
   )
 }
+
+// 使用 React.memo 避免父组件状态变化时重新渲染所有评论项
+export const CommentItem = memo(CommentItemInner)
 
 export default CommentItem

@@ -7,12 +7,14 @@ interface CommentListProps {
   comments: Comment[]
   onReply?: (comment: Comment, user: NonNullable<Comment['user']>) => void
   canCreate?: boolean
+  member?: Comment['user'] extends infer T ? T extends null | undefined ? never : T : never
 }
 
 export function CommentList({
   comments,
   onReply,
   canCreate = false,
+  member,
 }: CommentListProps) {
   // 只渲染一级评论
   const topLevelComments = comments.filter((c) => !c.parentId)
@@ -29,6 +31,7 @@ export function CommentList({
               user={comment.user}
               onReply={onReply}
               canCreate={canCreate}
+              member={member}
             />
             {/* 渲染二级评论 */}
             {comment.replies && comment.replies.length > 0 && (
@@ -44,6 +47,7 @@ export function CommentList({
                       isReply={true}
                       onReply={onReply}
                       canCreate={canCreate}
+                      member={member}
                     />
                   )
                 })}
