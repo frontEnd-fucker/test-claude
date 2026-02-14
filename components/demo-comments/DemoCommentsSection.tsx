@@ -1,30 +1,27 @@
 'use client'
 
 import { useState, useRef } from 'react'
-import {
-  DemoComment,
-  MockUser,
-  mockComments,
-  mockUsers,
-  getUserById,
-} from '@/lib/demo-mock'
+import { Comment, InsertComment } from '@/types/database'
+import { useComments, useCreateComment } from '@/lib/queries/comments'
 import { DemoCommentList } from './DemoCommentList'
 import { DemoCommentInput } from './DemoCommentInput'
 
+// 固定的项目 ID
+const PROJECT_ID = '3c482fc0-756f-486b-bf4f-3c99bcbb1d0d'
+
 export function DemoCommentsSection() {
-  const [comments, setComments] = useState<DemoComment[]>(mockComments)
+  // 使用真实 API 获取评论
+  const { data: comments = [], isLoading, error } = useComments({ projectId: PROJECT_ID })
+  const createComment = useCreateComment()
+
   const inputRef = useRef<HTMLTextAreaElement>(null)
   const [replyingTo, setReplyingTo] = useState<{
-    comment: DemoComment
-    user: MockUser
+    comment: Comment
+    user: NonNullable<Comment['user']>
   } | null>(null)
   const [inputValue, setInputValue] = useState('')
-  const [submitting, setSubmitting] = useState(false)
 
-  // 当前登录用户（模拟）
-  const currentUser = mockUsers[0]
-
-  const handleReply = (comment: DemoComment, user: MockUser) => {
+  const handleReply = (comment: Comment, user: NonNullable<Comment['user']>) => {
     setReplyingTo({ comment, user })
     setInputValue('')
   }
@@ -37,67 +34,52 @@ export function DemoCommentsSection() {
   const handleSubmit = async () => {
     if (!inputValue.trim()) return
 
-    setSubmitting(true)
+    // 获取被回复者的名称
+    const replyUserName = replyingTo?.user.name || replyingTo?.user.email?.split('@')[0] || '用户'
 
-    // 模拟网络延迟
-    await new Promise((resolve) => setTimeout(resolve, 500))
+    let content = inputValue.trim()
 
-    let newComment: DemoComment
+    // 判断是否是回复二级评论（二级评论有 parentId）
+    const isReplyToSecondLevel = !!replyingTo?.comment.parentId
 
-    if (replyingTo) {
-      // 回复评论
-      const newId = `c${Date.now()}`
-      // 回复主评论不需要 @name，回复二级评论需要
-      const content = replyingTo.comment.parentId
-        ? `@${replyingTo.user.name} ${inputValue.trim()}`
-        : inputValue.trim()
-
-      newComment = {
-        id: newId,
-        userId: currentUser.id,
-        content,
-        createdAt: new Date(),
-        parentId: replyingTo.comment.id,
-      }
-
-      // 更新评论列表
-      setComments((prev) =>
-        prev.map((c) => {
-          // 如果被回复的是一级评论，直接添加到其 replies
-          if (c.id === replyingTo.comment.id) {
-            return {
-              ...c,
-              replies: [...(c.replies || []), newComment],
-            }
-          }
-          // 如果被回复的是二级评论，找到其父评论并添加
-          if (c.id === replyingTo.comment.parentId) {
-            return {
-              ...c,
-              replies: [...(c.replies || []), newComment],
-            }
-          }
-          return c
-        })
-      )
-    } else {
-      // 新建一级评论
-      const newId = `c${Date.now()}`
-      newComment = {
-        id: newId,
-        userId: currentUser.id,
-        content: inputValue,
-        createdAt: new Date(),
-        parentId: null,
-        replies: [],
-      }
-
-      setComments((prev) => [newComment, ...prev])
+    // 回复二级评论时，自动在内容前加上 "回复@{name}: " 前缀
+    if (isReplyToSecondLevel) {
+      content = `回复@${replyUserName}: ${content}`
     }
 
-    setInputValue('')
-    setReplyingTo(null)
-    setSubmitting(false)
+    const commentData: InsertComment = {
+      content,
+      projectId: PROJECT_ID,
+    }
+
+    if (replyingTo) {
+      // 如果是回复二级评论，parentId 应该为主评论的 id
+      // 如果是回复主评论，parentId 为被回复评论的 id
+      commentData.parentId = isReplyToSecondLevel
+        ? replyingTo.comment.parentId!
+        : replyingTo.comment.id
+
+      // 回复二级评论时添加 mention
+      if (isReplyToSecondLevel) {
+        commentData.mentionIds = [replyingTo.comment.userId]
+      }
+    }
+
+    try {
+      await createComment.mutateAsync(commentData)
+      setInputValue('')
+      setReplyingTo(null)
+    } catch (error) {
+      console.error('Failed to create comment:', error)
+    }
+  }
+
+  if (isLoading) {
+    return <div className="demo-comments-section">加载中...</div>
+  }
+
+  if (error) {
+    return <div className="demo-comments-section">加载评论失败</div>
   }
 
   return (
@@ -105,19 +87,18 @@ export function DemoCommentsSection() {
       <h2 className="demo-comments-title">评论 ({comments.length})</h2>
 
       <DemoCommentInput
-        placeholder={replyingTo ? `回复 @${replyingTo.user.name}` : '写下你的评论...'}
+        placeholder={replyingTo ? `回复 @${replyingTo.user.name || replyingTo.user.email?.split('@')[0] || '用户'}:` : '写下你的评论...'}
         value={inputValue}
         onChange={setInputValue}
         onSubmit={handleSubmit}
         onCancel={handleCancelReply}
-        replyPrefix={replyingTo ? `@${replyingTo.user.name}` : null}
-        submitting={submitting}
+        replyPrefix={replyingTo ? `回复@${replyingTo.user.name || replyingTo.user.email?.split('@')[0] || '用户'}:` : null}
+        submitting={createComment.isPending}
         inputRef={inputRef}
       />
 
       <DemoCommentList
         comments={comments}
-        users={mockUsers}
         onReply={handleReply}
       />
     </div>

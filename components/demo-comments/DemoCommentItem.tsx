@@ -1,13 +1,14 @@
 'use client'
 
-import { DemoComment, MockUser, getUserById, formatTimeAgo } from '@/lib/demo-mock'
+import { Comment, User } from '@/types/database'
+import { formatTimeAgo } from '@/lib/utils'
 import { MessageSquare } from 'lucide-react'
 
 interface DemoCommentItemProps {
-  comment: DemoComment
-  user: MockUser
+  comment: Comment
+  user: User
   isReply?: boolean
-  onReply?: (comment: DemoComment, user: MockUser) => void
+  onReply?: (comment: Comment, user: User) => void
 }
 
 export function DemoCommentItem({
@@ -19,7 +20,13 @@ export function DemoCommentItem({
   return (
     <div className={`demo-comment-item ${isReply ? 'is-reply' : ''}`}>
       <div className="demo-comment-avatar">
-        <img src={user.avatar} alt={user.name} />
+        {user.avatarUrl ? (
+          <img src={user.avatarUrl} alt={user.name || '用户'} />
+        ) : (
+          <div className="demo-comment-avatar-placeholder">
+            {user.name?.charAt(0) || 'U'}
+          </div>
+        )}
       </div>
       <div
         className="demo-comment-content"
@@ -27,7 +34,7 @@ export function DemoCommentItem({
         style={{ cursor: 'pointer' }}
       >
         <div className="demo-comment-header">
-          <span className="demo-comment-author">{user.name}</span>
+          <span className="demo-comment-author">{user.name || user.email || '未知用户'}</span>
           <span className="demo-comment-time">{formatTimeAgo(comment.createdAt)}</span>
         </div>
         <div className="demo-comment-text">{comment.content}</div>

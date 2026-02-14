@@ -45,9 +45,23 @@ export function useCreateComment() {
       // Update all comment lists
       previousQueries.forEach(([queryKey, data]) => {
         if (Array.isArray(data)) {
-          // List query - add new comment
-          const newData = [...data, optimisticComment]
-          queryClient.setQueryData(queryKey, newData)
+          // If replying to a comment (has parentId), add to parent's replies
+          if (commentData.parentId) {
+            const newData = data.map(comment => {
+              if (comment.id === commentData.parentId) {
+                return {
+                  ...comment,
+                  replies: [...(comment.replies || []), optimisticComment]
+                }
+              }
+              return comment
+            })
+            queryClient.setQueryData(queryKey, newData)
+          } else {
+            // New root comment - add to list
+            const newData = [...data, optimisticComment]
+            queryClient.setQueryData(queryKey, newData)
+          }
         }
       })
 
