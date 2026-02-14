@@ -37,6 +37,7 @@ function CommentItemInner({
   // member.id 是当前登录用户的 ID，comment.userId 是评论作者的 ID
   const isAuthor = comment.userId === member?.id
   const canDelete = canDeleteComments(isAuthor, member)
+  const canEdit = isAuthor
 
   const handleSaveEdit = () => {
     if (!editContent.trim()) return
