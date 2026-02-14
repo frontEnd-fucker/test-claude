@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, memo } from 'react'
-import { Comment } from '@/types/database'
+import { Comment, ProjectMember } from '@/types/database'
 import { useUpdateComment, useDeleteComment } from '@/lib/queries/comments'
 import { canDeleteComments } from '@/lib/permissions/project'
 import { formatTimeAgo } from '@/lib/utils'
@@ -16,7 +16,7 @@ interface CommentItemProps {
   isReply?: boolean
   onReply?: (comment: Comment, user: CommentUser) => void
   canCreate?: boolean
-  member?: CommentUser
+  member?: ProjectMember | null
 }
 
 function CommentItemInner({

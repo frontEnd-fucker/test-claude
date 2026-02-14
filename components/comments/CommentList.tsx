@@ -1,13 +1,13 @@
 'use client'
 
-import { Comment } from '@/types/database'
+import { Comment, ProjectMember } from '@/types/database'
 import { CommentItem } from './CommentItem'
 
 interface CommentListProps {
   comments: Comment[]
   onReply?: (comment: Comment, user: NonNullable<Comment['user']>) => void
   canCreate?: boolean
-  member?: Comment['user'] extends infer T ? T extends null | undefined ? never : T : never
+  member?: ProjectMember | null
 }
 
 export function CommentList({
