@@ -7,13 +7,16 @@ import { canDeleteComments } from '@/lib/permissions/project'
 import { formatTimeAgo } from '@/lib/utils'
 import { MessageSquare, Edit, Trash2, Check, X, Loader2 } from 'lucide-react'
 
+// 简化类型定义
+type CommentUser = NonNullable<Comment['user']>
+
 interface CommentItemProps {
   comment: Comment
-  user: NonNullable<Comment['user']>
+  user: CommentUser
   isReply?: boolean
-  onReply?: (comment: Comment, user: NonNullable<Comment['user']>) => void
+  onReply?: (comment: Comment, user: CommentUser) => void
   canCreate?: boolean
-  member?: Comment['user'] extends infer T ? T extends null | undefined ? never : T : never
+  member?: CommentUser
 }
 
 function CommentItemInner({

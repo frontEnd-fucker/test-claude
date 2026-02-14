@@ -8,6 +8,7 @@ import { canCreateComments, canDeleteComments } from '@/lib/permissions/project'
 import { CommentInput } from './CommentInput'
 import { CommentList } from './CommentList'
 import { Skeleton } from '@/components/ui/skeleton'
+import { toast } from 'sonner'
 
 interface CommentsSectionProps {
   taskId?: string
@@ -79,8 +80,9 @@ export function CommentsSection({ taskId, projectId }: CommentsSectionProps) {
       await createComment.mutateAsync(commentData)
       setInputValue('')
       setReplyingTo(null)
+      toast.success('评论已发布')
     } catch (error) {
-      console.error('Failed to create comment:', error)
+      toast.error('发布评论失败，请重试')
     }
   }
 
