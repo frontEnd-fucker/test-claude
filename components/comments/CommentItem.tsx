@@ -77,7 +77,7 @@ export function CommentItem({
             className="w-10 h-10 rounded-full object-cover"
           />
         ) : (
-          <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center text-sm font-medium text-muted-foreground">
+          <div className="w-10 h-10 rounded-full bg-muted dark:bg-muted flex items-center justify-center text-sm font-medium text-muted-foreground">
             {user.name?.charAt(0)?.toUpperCase() || 'U'}
           </div>
         )}
@@ -87,7 +87,7 @@ export function CommentItem({
       <div className="flex-1 min-w-0">
         {/* Header */}
         <div className="flex items-center gap-2 mb-1">
-          <span className="text-sm font-medium text-primary">
+          <span className="text-sm font-medium text-card-foreground">
             {user.name || user.email || '未知用户'}
           </span>
           <span className="text-xs text-muted-foreground">
@@ -100,7 +100,7 @@ export function CommentItem({
               {canEdit && (
                 <button
                   type="button"
-                  className="p-1 bg-none border-none cursor-pointer text-muted-foreground rounded hover:text-foreground transition-colors"
+                  className="p-1 bg-none border-none cursor-pointer text-muted-foreground rounded hover:text-foreground dark:hover:text-foreground transition-colors"
                   onClick={() => setIsEditing(true)}
                   title="编辑"
                 >
@@ -127,7 +127,7 @@ export function CommentItem({
             <textarea
               value={editContent}
               onChange={(e) => setEditContent(e.target.value)}
-              className="w-full p-3 border border-input rounded-md text-sm font-inherit resize-vertical focus:outline-none focus:ring-2 focus:ring-ring/10"
+              className="w-full p-3 border border-input bg-background dark:bg-input/30 rounded-md text-sm font-inherit resize-vertical focus:outline-none focus:ring-2 focus:ring-ring/10"
               rows={2}
               disabled={updateCommentMutation.isPending}
             />
@@ -164,16 +164,16 @@ export function CommentItem({
               }
             }}
           >
-            <p className="text-sm text-foreground leading-relaxed break-words hover:text-primary/80 transition-colors">
+            <p className="text-sm text-card-foreground leading-relaxed break-words hover:text-primary/80 dark:hover:text-primary transition-colors">
               {comment.content}
             </p>
             {!isReply && (
-              <span className="mt-1 block text-xs text-muted-foreground hover:text-primary transition-colors">
+              <span className="mt-1 block text-xs text-muted-foreground hover:text-primary dark:hover:text-primary transition-colors">
                 回复 ({comment.replies?.length || 0})
               </span>
             )}
             {isReply && (
-              <span className="mt-1 inline-flex items-center text-xs text-muted-foreground hover:text-primary transition-colors">
+              <span className="mt-1 inline-flex items-center text-xs text-muted-foreground hover:text-primary dark:hover:text-primary transition-colors">
                 <MessageSquare size={14} className="mr-1" />
                 回复
               </span>

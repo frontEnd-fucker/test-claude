@@ -41,7 +41,7 @@ export function CommentInput({
   return (
     <div className="mb-6">
       {replyPrefix && (
-        <div className="flex items-center gap-2 px-3 py-2 bg-muted rounded-t-md text-sm text-muted-foreground">
+        <div className="flex items-center gap-2 px-3 py-2 bg-muted dark:bg-muted rounded-t-md text-sm text-muted-foreground">
           <span>{replyPrefix}</span>
           <button
             type="button"
@@ -54,7 +54,7 @@ export function CommentInput({
       )}
       <textarea
         ref={inputRef}
-        className="w-full p-3 border border-input rounded-b-md text-sm font-inherit resize-vertical focus:outline-none focus:ring-2 focus:ring-ring/10 transition-shadow"
+        className="w-full p-3 border border-input bg-background dark:bg-input/30 rounded-b-md text-sm font-inherit resize-vertical focus:outline-none focus:ring-2 focus:ring-ring/10 transition-shadow"
         placeholder={placeholder}
         value={value}
         onChange={(e) => onChange(e.target.value)}

@@ -101,15 +101,15 @@ export function CommentsSection({ taskId, projectId }: CommentsSectionProps) {
 
   if (error) {
     return (
-      <div className="bg-white rounded-xl p-6 shadow-sm border">
-        <p className="text-red-500 text-sm">加载评论失败</p>
+      <div className="bg-card text-destructive rounded-xl p-6 shadow-sm border">
+        <p className="text-sm">加载评论失败</p>
       </div>
     )
   }
 
   return (
-    <div className="bg-white rounded-xl p-6 shadow-sm border">
-      <h2 className="text-lg font-semibold mb-4 text-primary">评论 ({comments.length})</h2>
+    <div className="bg-card rounded-xl p-6 shadow-sm border dark:border-border">
+      <h2 className="text-lg font-semibold mb-4 text-card-foreground">评论 ({comments.length})</h2>
 
       {canCreate && (
         <CommentInput
