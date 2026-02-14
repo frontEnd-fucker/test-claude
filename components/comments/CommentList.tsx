@@ -1,55 +1,63 @@
 'use client'
 
-import { Comment } from '@/types/database'
-import CommentItem from './CommentItem'
+import { Comment, ProjectMember } from '@/types/database'
+import { CommentItem } from './CommentItem'
 
 interface CommentListProps {
   comments: Comment[]
-  onReply: (commentId: string) => void
-  canCreate: boolean
-  depth?: number
+  onReply?: (comment: Comment, user: NonNullable<Comment['user']>) => void
+  canCreate?: boolean
+  member?: ProjectMember | null
 }
 
-export default function CommentList({
+export function CommentList({
   comments,
   onReply,
-  canCreate,
-  depth = 0,
+  canCreate = false,
+  member,
 }: CommentListProps) {
-  const maxDepth = 3 // Limit nesting depth for better UX
-
-  if (depth >= maxDepth) {
-    return (
-      <div className="pl-6 border-l-2 border-muted">
-        <p className="text-sm text-muted-foreground italic p-3">
-          Replies are nested too deep to display
-        </p>
-      </div>
-    )
-  }
+  // 只渲染一级评论
+  const topLevelComments = comments.filter((c) => !c.parentId)
 
   return (
-    <div className="space-y-4">
-      {comments.map((comment) => (
-        <div key={comment.id} className={depth > 0 ? 'pl-6 border-l-2 border-muted' : ''}>
-          <CommentItem
-            comment={comment}
-            onReply={onReply}
-            canCreate={canCreate}
-            depth={depth}
-          />
-          {comment.replies && comment.replies.length > 0 && (
-            <div className="mt-4">
-              <CommentList
-                comments={comment.replies}
-                onReply={onReply}
-                canCreate={canCreate}
-                depth={depth + 1}
-              />
-            </div>
-          )}
-        </div>
-      ))}
+    <div className="flex flex-col gap-4">
+      {topLevelComments.map((comment) => {
+        if (!comment.user) return null
+
+        return (
+          <div key={comment.id} className="flex flex-col gap-3">
+            <CommentItem
+              comment={comment}
+              user={comment.user}
+              onReply={onReply}
+              canCreate={canCreate}
+              member={member}
+            />
+            {/* 渲染二级评论 */}
+            {comment.replies && comment.replies.length > 0 && (
+              <div className="flex flex-col gap-3 pl-6 border-l-2 border-border">
+                {comment.replies.map((reply) => {
+                  if (!reply.user) return null
+
+                  return (
+                    <CommentItem
+                      key={reply.id}
+                      comment={reply}
+                      user={reply.user}
+                      isReply={true}
+                      onReply={onReply}
+                      canCreate={canCreate}
+                      member={member}
+                    />
+                  )
+                })}
+              </div>
+            )}
+          </div>
+        )
+      })}
     </div>
   )
 }
+
+export default CommentList

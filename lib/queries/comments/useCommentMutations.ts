@@ -5,6 +5,7 @@ import { useParams } from 'next/navigation'
 import { commentKeys } from './query-keys'
 import { createComment, updateComment, deleteComment } from './api'
 import { Comment, InsertComment, UpdateComment } from '@/types/database'
+import { toast } from 'sonner'
 
 export function useCreateComment() {
   const queryClient = useQueryClient()
@@ -45,9 +46,23 @@ export function useCreateComment() {
       // Update all comment lists
       previousQueries.forEach(([queryKey, data]) => {
         if (Array.isArray(data)) {
-          // List query - add new comment
-          const newData = [...data, optimisticComment]
-          queryClient.setQueryData(queryKey, newData)
+          // If replying to a comment (has parentId), add to parent's replies
+          if (commentData.parentId) {
+            const newData = data.map(comment => {
+              if (comment.id === commentData.parentId) {
+                return {
+                  ...comment,
+                  replies: [...(comment.replies || []), optimisticComment]
+                }
+              }
+              return comment
+            })
+            queryClient.setQueryData(queryKey, newData)
+          } else {
+            // New root comment - add to list
+            const newData = [...data, optimisticComment]
+            queryClient.setQueryData(queryKey, newData)
+          }
         }
       })
 
@@ -115,6 +130,7 @@ export function useUpdateComment() {
           queryClient.setQueryData(queryKey, comments)
         })
       }
+      toast.error('更新评论失败，请重试')
     },
     onSettled: (data, error, variables) => {
       // Invalidate the specific comment and all lists
@@ -165,6 +181,7 @@ export function useDeleteComment() {
           queryClient.setQueryData(queryKey, comments)
         })
       }
+      toast.error('删除评论失败，请重试')
     },
     onSettled: (data, error, variables) => {
       // Always refetch after error or success

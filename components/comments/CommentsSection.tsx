@@ -1,77 +1,92 @@
 'use client'
 
-import { useState } from 'react'
-import { useParams } from 'next/navigation'
+import { useState, useRef } from 'react'
+import { Comment, InsertComment } from '@/types/database'
 import { useComments, useCreateComment } from '@/lib/queries/comments'
 import { useProjectMember } from '@/lib/queries/members'
-import { canCreateComments } from '@/lib/permissions/project'
-import { Button } from '@/components/ui/button'
-import { Textarea } from '@/components/ui/textarea'
-import { Card } from '@/components/ui/card'
-import { Loader2, MessageSquare, AlertCircle } from 'lucide-react'
-import CommentList from './CommentList'
+import { canCreateComments, canDeleteComments } from '@/lib/permissions/project'
+import { CommentInput } from './CommentInput'
+import { CommentList } from './CommentList'
 import { Skeleton } from '@/components/ui/skeleton'
+import { toast } from 'sonner'
 
 interface CommentsSectionProps {
   taskId?: string
   projectId?: string
 }
 
-export default function CommentsSection({ taskId, projectId }: CommentsSectionProps) {
-  const [newComment, setNewComment] = useState('')
-  const [replyingTo, setReplyingTo] = useState<string | null>(null)
-  const params = useParams()
+export function CommentsSection({ taskId, projectId }: CommentsSectionProps) {
+  // 使用真实 API 获取评论
+  const { data: comments = [], isLoading, error } = useComments({ taskId, projectId })
+  const createComment = useCreateComment()
 
-  // Fetch comments
-  const {
-    data: comments = [],
-    isLoading: commentsLoading,
-    error: commentsError,
-    refetch: refetchComments,
-  } = useComments({ taskId, projectId })
+  const inputRef = useRef<HTMLTextAreaElement>(null)
+  const [replyingTo, setReplyingTo] = useState<{
+    comment: Comment
+    user: NonNullable<Comment['user']>
+  } | null>(null)
+  const [inputValue, setInputValue] = useState('')
 
-  // Fetch user's project member info for permissions
+  // 统一获取用户 member 信息，避免每个 CommentItem 重复查询
   const { data: member, isLoading: memberLoading } = useProjectMember(projectId)
+  const canCreate = canCreateComments(member || null)
 
-
-  const createCommentMutation = useCreateComment()
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!newComment.trim()) return
-
-    createCommentMutation.mutate(
-      {
-        content: newComment.trim(),
-        taskId,
-        projectId,
-        parentId: replyingTo || undefined,
-      },
-      {
-        onSuccess: () => {
-          setNewComment('')
-          setReplyingTo(null)
-        },
-      }
-    )
-  }
-
-  const handleReply = (commentId: string) => {
-    setReplyingTo(commentId)
-    // Scroll to comment form
-    setTimeout(() => {
-      const form = document.getElementById('comment-form')
-      form?.scrollIntoView({ behavior: 'smooth' })
-    }, 100)
+  const handleReply = (comment: Comment, user: NonNullable<Comment['user']>) => {
+    setReplyingTo({ comment, user })
+    setInputValue('')
   }
 
   const handleCancelReply = () => {
     setReplyingTo(null)
+    setInputValue('')
   }
 
-  const canCreate = canCreateComments(member || null)
+  const handleSubmit = async () => {
+    if (!inputValue.trim()) return
 
-  if (commentsLoading || memberLoading) {
+    // 获取被回复者的名称
+    const replyUserName = replyingTo?.user.name || replyingTo?.user.email?.split('@')[0] || '用户'
+
+    let content = inputValue.trim()
+
+    // 判断是否是回复二级评论（二级评论有 parentId）
+    const isReplyToSecondLevel = !!replyingTo?.comment.parentId
+
+    // 回复二级评论时，自动在内容前加上 "回复@{name}: " 前缀
+    if (isReplyToSecondLevel) {
+      content = `回复@${replyUserName}: ${content}`
+    }
+
+    const commentData: InsertComment = {
+      content,
+      projectId,
+      taskId,
+    }
+
+    if (replyingTo) {
+      // 如果是回复二级评论，parentId 应该为主评论的 id
+      // 如果是回复主评论，parentId 为被回复评论的 id
+      commentData.parentId = isReplyToSecondLevel
+        ? replyingTo.comment.parentId!
+        : replyingTo.comment.id
+
+      // 回复二级评论时添加 mention
+      if (isReplyToSecondLevel) {
+        commentData.mentionIds = [replyingTo.comment.userId]
+      }
+    }
+
+    try {
+      await createComment.mutateAsync(commentData)
+      setInputValue('')
+      setReplyingTo(null)
+      toast.success('评论已发布')
+    } catch (error) {
+      toast.error('发布评论失败，请重试')
+    }
+  }
+
+  if (isLoading || memberLoading) {
     return (
       <div className="space-y-4">
         <div className="flex items-center gap-2">
@@ -86,130 +101,39 @@ export default function CommentsSection({ taskId, projectId }: CommentsSectionPr
     )
   }
 
-  if (commentsError) {
+  if (error) {
     return (
-      <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-4">
-        <div className="flex items-center gap-2 text-destructive">
-          <AlertCircle className="h-4 w-4" />
-          <h3 className="text-sm font-semibold">Error loading comments</h3>
-        </div>
-        <p className="mt-1 text-sm">{commentsError.message}</p>
-        <Button
-          variant="outline"
-          size="sm"
-          className="mt-3"
-          onClick={() => refetchComments()}
-        >
-          Retry
-        </Button>
+      <div className="bg-card text-destructive rounded-xl p-6 shadow-sm border">
+        <p className="text-sm">加载评论失败</p>
       </div>
     )
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <MessageSquare className="h-5 w-5 text-muted-foreground" />
-          <h3 className="text-lg font-semibold">Comments ({comments.length})</h3>
-        </div>
-      </div>
+    <div className="bg-card rounded-xl p-6 shadow-sm border dark:border-border">
+      <h2 className="text-lg font-semibold mb-4 text-card-foreground">评论 ({comments.length})</h2>
 
-      {/* Comment form */}
       {canCreate && (
-        <Card className="p-4" id="comment-form">
-          <form onSubmit={handleSubmit} className="space-y-3">
-            <div>
-              <Textarea
-                id="comment-textarea"
-                value={newComment}
-                onChange={(e) => setNewComment(e.target.value)}
-                placeholder={
-                  replyingTo
-                    ? 'Write your reply...'
-                    : 'Add a comment...'
-                }
-                className="min-h-[100px]"
-                rows={3}
-              />
-              {replyingTo && (
-                <div className="mt-2 flex items-center justify-between text-sm text-muted-foreground">
-                  <span>Replying to comment</span>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={handleCancelReply}
-                  >
-                    Cancel reply
-                  </Button>
-                </div>
-              )}
-            </div>
-            <div className="flex justify-end gap-2">
-              <Button
-                type="submit"
-                disabled={!newComment.trim() || createCommentMutation.isPending}
-              >
-                {createCommentMutation.isPending && (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                )}
-                {replyingTo ? 'Reply' : 'Post Comment'}
-              </Button>
-            </div>
-          </form>
-        </Card>
+        <CommentInput
+          placeholder={replyingTo ? `回复 @${replyingTo.user.name || replyingTo.user.email?.split('@')[0] || '用户'}:` : '写下你的评论...'}
+          value={inputValue}
+          onChange={setInputValue}
+          onSubmit={handleSubmit}
+          onCancel={handleCancelReply}
+          replyPrefix={replyingTo ? `回复@${replyingTo.user.name || replyingTo.user.email?.split('@')[0] || '用户'}:` : null}
+          submitting={createComment.isPending}
+          inputRef={inputRef}
+        />
       )}
 
-      {/* Comments list */}
-      {comments.length > 0 ? (
-        <CommentList
-          comments={comments}
-          onReply={handleReply}
-          canCreate={canCreate}
-        />
-      ) : (
-        <div className="text-center">
-          {canCreate ? (
-            <div
-              className="group cursor-pointer border-2 border-dashed border-primary/30 hover:border-primary/50 rounded-xl p-8 transition-all hover:shadow-md bg-gradient-to-br from-primary/5 to-transparent"
-              onClick={() => {
-                // 自动聚焦到评论表单
-                const textarea = document.getElementById('comment-textarea')
-                textarea?.focus()
-              }}
-            >
-              <MessageSquare className="mx-auto h-16 w-16 text-primary/60 group-hover:text-primary/80 transition-colors" />
-              <h4 className="mt-6 text-xl font-semibold">Start the discussion</h4>
-              <p className="mt-2 text-muted-foreground">
-                Be the first to add a comment and collaborate on this task.
-              </p>
-              <Button
-                variant="default"
-                className="mt-6 px-6 py-3 text-base"
-                onClick={(e) => {
-                  e.stopPropagation()
-                  const textarea = document.getElementById('comment-textarea')
-                  textarea?.focus()
-                }}
-              >
-                <MessageSquare className="mr-2 h-5 w-5" />
-                Add First Comment
-              </Button>
-            </div>
-          ) : (
-            // 保持原有的无权限状态
-            <Card className="p-8 text-center">
-              <MessageSquare className="mx-auto h-12 w-12 text-muted-foreground/50" />
-              <h4 className="mt-4 text-lg font-medium">No comments yet</h4>
-              <p className="mt-2 text-sm text-muted-foreground">
-                No comments have been added yet.
-              </p>
-            </Card>
-          )}
-        </div>
-      )}
+      <CommentList
+        comments={comments}
+        onReply={handleReply}
+        canCreate={canCreate}
+        member={member}
+      />
     </div>
   )
 }
+
+export default CommentsSection

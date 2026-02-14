@@ -21,6 +21,7 @@ export interface Project {
   createdAt: Date
   updatedAt: Date
   members?: ProjectMember[]  // Optional member list
+  commentsCount?: number // Comments count
 }
 
 export interface ProjectMember {
@@ -49,6 +50,7 @@ export interface Task {
   assigneeId?: string // References auth.users.id
   createdAt: Date
   updatedAt: Date
+  commentsCount?: number // Comments count
 }
 
 export interface TodoItem {
@@ -86,6 +88,9 @@ export interface Comment {
   // Reply functionality
   parentId?: string
 
+  // @mentions
+  mentionIds?: string[]
+
   // User information
   userId: string
   createdAt: Date
@@ -108,6 +113,7 @@ export type InsertComment = {
   taskId?: string
   projectId?: string
   parentId?: string
+  mentionIds?: string[]
 }
 
 // Update types (for updating records)

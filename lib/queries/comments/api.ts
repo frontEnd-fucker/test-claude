@@ -51,6 +51,7 @@ export async function fetchComments(options?: {
     taskId: comment.task_id,
     projectId: comment.project_id,
     parentId: comment.parent_id,
+    mentionIds: comment.mention_ids,
     userId: comment.user_id,
     createdAt: new Date(comment.created_at),
     updatedAt: new Date(comment.updated_at),
@@ -142,6 +143,10 @@ export async function createComment(
     dbComment.parent_id = commentData.parentId
   }
 
+  if (commentData.mentionIds) {
+    dbComment.mention_ids = commentData.mentionIds
+  }
+
   const { data: newComment, error } = await supabase
     .from('comments')
     .insert(dbComment)
@@ -165,6 +170,7 @@ export async function createComment(
     taskId: newComment.task_id,
     projectId: newComment.project_id,
     parentId: newComment.parent_id,
+    mentionIds: newComment.mention_ids,
     userId: newComment.user_id,
     createdAt: new Date(newComment.created_at),
     updatedAt: new Date(newComment.updated_at),
@@ -218,6 +224,7 @@ export async function updateComment(
     taskId: updatedComment.task_id,
     projectId: updatedComment.project_id,
     parentId: updatedComment.parent_id,
+    mentionIds: updatedComment.mention_ids,
     userId: updatedComment.user_id,
     createdAt: new Date(updatedComment.created_at),
     updatedAt: new Date(updatedComment.updated_at),
@@ -274,6 +281,7 @@ export async function getComment(id: string): Promise<Comment> {
     taskId: comment.task_id,
     projectId: comment.project_id,
     parentId: comment.parent_id,
+    mentionIds: comment.mention_ids,
     userId: comment.user_id,
     createdAt: new Date(comment.created_at),
     updatedAt: new Date(comment.updated_at),
