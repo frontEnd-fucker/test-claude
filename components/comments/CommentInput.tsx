@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 
 interface CommentInputProps {
   placeholder?: string
@@ -39,13 +39,13 @@ export function CommentInput({
   }, [replyPrefix, inputRef])
 
   return (
-    <div className="comment-input">
+    <div className="mb-6">
       {replyPrefix && (
-        <div className="comment-input-prefix">
+        <div className="flex items-center gap-2 px-3 py-2 bg-muted rounded-t-md text-sm text-muted-foreground">
           <span>{replyPrefix}</span>
           <button
             type="button"
-            className="comment-input-cancel"
+            className="ml-auto bg-none border-none cursor-pointer text-lg leading-none hover:text-foreground transition-colors"
             onClick={onCancel}
           >
             ×
@@ -54,7 +54,7 @@ export function CommentInput({
       )}
       <textarea
         ref={inputRef}
-        className="comment-input-textarea"
+        className="w-full p-3 border border-input rounded-b-md text-sm font-inherit resize-vertical focus:outline-none focus:ring-2 focus:ring-ring/10 transition-shadow"
         placeholder={placeholder}
         value={value}
         onChange={(e) => onChange(e.target.value)}
@@ -64,7 +64,7 @@ export function CommentInput({
       />
       <button
         type="button"
-        className="comment-input-submit"
+        className="mt-2 px-4 py-1.5 bg-primary text-primary-foreground border-none rounded-md text-sm cursor-pointer hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
         onClick={onSubmit}
         disabled={!value.trim() || submitting}
       >
@@ -73,3 +73,5 @@ export function CommentInput({
     </div>
   )
 }
+
+export default CommentInput

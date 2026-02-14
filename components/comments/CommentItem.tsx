@@ -5,39 +5,23 @@ import { Comment } from '@/types/database'
 import { useUpdateComment, useDeleteComment } from '@/lib/queries/comments'
 import { useProjectMember } from '@/lib/queries/members'
 import { canDeleteComments } from '@/lib/permissions/project'
-import { Button } from '@/components/ui/button'
-import { Textarea } from '@/components/ui/textarea'
-import { Card } from '@/components/ui/card'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
-import {
-  MoreVertical,
-  Edit,
-  Trash2,
-  Reply,
-  Check,
-  X,
-  Loader2,
-} from 'lucide-react'
-import { cn } from '@/lib/utils'
+import { formatTimeAgo } from '@/lib/utils'
+import { MessageSquare, Edit, Trash2, Check, X, Loader2 } from 'lucide-react'
 
 interface CommentItemProps {
   comment: Comment
-  onReply: (commentId: string) => void
-  canCreate: boolean
-  depth: number
+  user: NonNullable<Comment['user']>
+  isReply?: boolean
+  onReply?: (comment: Comment, user: NonNullable<Comment['user']>) => void
+  canCreate?: boolean
 }
 
-export default function CommentItem({
+export function CommentItem({
   comment,
+  user,
+  isReply = false,
   onReply,
-  canCreate,
-  depth,
+  canCreate = false,
 }: CommentItemProps) {
   const [isEditing, setIsEditing] = useState(false)
   const [editContent, setEditContent] = useState(comment.content)
@@ -66,7 +50,7 @@ export default function CommentItem({
   }
 
   const handleDelete = () => {
-    if (window.confirm('Are you sure you want to delete this comment?')) {
+    if (window.confirm('确定要删除这条评论吗？')) {
       deleteCommentMutation.mutate(comment.id)
     }
   }
@@ -76,148 +60,129 @@ export default function CommentItem({
     setIsEditing(false)
   }
 
-  const formatDate = (date: Date) => {
-    const now = new Date()
-    const diffMs = now.getTime() - date.getTime()
-    const diffMins = Math.floor(diffMs / 60000)
-    const diffHours = Math.floor(diffMs / 3600000)
-    const diffDays = Math.floor(diffMs / 86400000)
-
-    if (diffMins < 1) return 'just now'
-    if (diffMins < 60) return `${diffMins}m ago`
-    if (diffHours < 24) return `${diffHours}h ago`
-    if (diffDays < 7) return `${diffDays}d ago`
-    return date.toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-    })
-  }
-
-  const getUserInitials = (name?: string, email?: string) => {
-    if (name) {
-      return name
-        .split(' ')
-        .map((n) => n[0])
-        .join('')
-        .toUpperCase()
-        .slice(0, 2)
+  const handleContentClick = () => {
+    if (!isEditing && canCreate) {
+      onReply?.(comment, user)
     }
-    if (email) {
-      return email[0].toUpperCase()
-    }
-    return 'U'
   }
 
   return (
-    <Card className={cn('p-4', depth > 0 && 'bg-muted/30')}>
-      <div className="flex gap-3">
-        {/* Avatar */}
-        <Avatar className="h-8 w-8">
-          <AvatarImage src={comment.user?.avatarUrl} />
-          <AvatarFallback className="text-xs">
-            {getUserInitials(comment.user?.name, comment.user?.email)}
-          </AvatarFallback>
-        </Avatar>
-
-        {/* Content */}
-        <div className="flex-1 min-w-0">
-          {/* Header */}
-          <div className="flex items-start justify-between mb-2">
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="text-sm font-medium">
-                  {comment.user?.name || comment.user?.email || 'Unknown User'}
-                </span>
-                <span className="text-xs text-muted-foreground">
-                  {formatDate(comment.createdAt)}
-                  {comment.updatedAt.getTime() !== comment.createdAt.getTime() && ' (edited)'}
-                </span>
-              </div>
-            </div>
-
-            {/* Actions */}
-            {(canEdit || canDelete) && (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                    <MoreVertical className="h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  {canEdit && (
-                    <DropdownMenuItem onClick={() => setIsEditing(true)}>
-                      <Edit className="mr-2 h-4 w-4" />
-                      Edit
-                    </DropdownMenuItem>
-                  )}
-                  {canDelete && (
-                    <DropdownMenuItem
-                      onClick={handleDelete}
-                      className="text-destructive focus:text-destructive"
-                    >
-                      <Trash2 className="mr-2 h-4 w-4" />
-                      Delete
-                    </DropdownMenuItem>
-                  )}
-                </DropdownMenuContent>
-              </DropdownMenu>
-            )}
+    <div className={`flex gap-3 ${isReply ? 'pl-6' : ''}`}>
+      {/* Avatar */}
+      <div className="flex-shrink-0">
+        {user.avatarUrl ? (
+          <img
+            src={user.avatarUrl}
+            alt={user.name || '用户'}
+            className="w-10 h-10 rounded-full object-cover"
+          />
+        ) : (
+          <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center text-sm font-medium text-muted-foreground">
+            {user.name?.charAt(0)?.toUpperCase() || 'U'}
           </div>
+        )}
+      </div>
 
-          {/* Comment content */}
-          {isEditing ? (
-            <div className="space-y-3">
-              <Textarea
-                value={editContent}
-                onChange={(e) => setEditContent(e.target.value)}
-                className="min-h-[80px]"
-                rows={3}
-              />
-              <div className="flex justify-end gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleCancelEdit}
-                  disabled={updateCommentMutation.isPending}
-                >
-                  <X className="mr-2 h-3 w-3" />
-                  Cancel
-                </Button>
-                <Button
-                  size="sm"
-                  onClick={handleSaveEdit}
-                  disabled={!editContent.trim() || updateCommentMutation.isPending}
-                >
-                  {updateCommentMutation.isPending && (
-                    <Loader2 className="mr-2 h-3 w-3 animate-spin" />
-                  )}
-                  <Check className="mr-2 h-3 w-3" />
-                  Save
-                </Button>
-              </div>
-            </div>
-          ) : (
-            <>
-              <p className="text-sm whitespace-pre-wrap">{comment.content}</p>
+      {/* Content */}
+      <div className="flex-1 min-w-0">
+        {/* Header */}
+        <div className="flex items-center gap-2 mb-1">
+          <span className="text-sm font-medium text-primary">
+            {user.name || user.email || '未知用户'}
+          </span>
+          <span className="text-xs text-muted-foreground">
+            {formatTimeAgo(comment.createdAt)}
+          </span>
 
-              {/* Reply button */}
-              {canCreate && depth < 2 && (
-                <div className="mt-3">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => onReply(comment.id)}
-                  >
-                    <Reply className="mr-2 h-3 w-3" />
-                    Reply
-                  </Button>
-                </div>
+          {/* Actions */}
+          {(canEdit || canDelete) && !isReply && (
+            <div className="ml-auto flex gap-1" onClick={(e) => e.stopPropagation()}>
+              {canEdit && (
+                <button
+                  type="button"
+                  className="p-1 bg-none border-none cursor-pointer text-muted-foreground rounded hover:text-foreground transition-colors"
+                  onClick={() => setIsEditing(true)}
+                  title="编辑"
+                >
+                  <Edit size={14} />
+                </button>
               )}
-            </>
+              {canDelete && (
+                <button
+                  type="button"
+                  className="p-1 bg-none border-none cursor-pointer text-muted-foreground rounded hover:text-destructive transition-colors"
+                  onClick={handleDelete}
+                  title="删除"
+                >
+                  <Trash2 size={14} />
+                </button>
+              )}
+            </div>
           )}
         </div>
+
+        {/* Comment content */}
+        {isEditing ? (
+          <div className="mt-3" onClick={(e) => e.stopPropagation()}>
+            <textarea
+              value={editContent}
+              onChange={(e) => setEditContent(e.target.value)}
+              className="w-full p-3 border border-input rounded-md text-sm font-inherit resize-vertical focus:outline-none focus:ring-2 focus:ring-ring/10"
+              rows={2}
+              disabled={updateCommentMutation.isPending}
+            />
+            <div className="mt-2 flex justify-end gap-2">
+              <button
+                type="button"
+                className="px-3 py-1 bg-none border-none cursor-pointer text-sm text-muted-foreground rounded hover:text-foreground transition-colors disabled:opacity-50"
+                onClick={handleCancelEdit}
+                disabled={updateCommentMutation.isPending}
+              >
+                <X size={14} className="inline mr-1" /> 取消
+              </button>
+              <button
+                type="button"
+                className="px-3 py-1 bg-primary text-primary-foreground border-none rounded-md text-sm cursor-pointer hover:opacity-90 transition-opacity disabled:opacity-50"
+                onClick={handleSaveEdit}
+                disabled={!editContent.trim() || updateCommentMutation.isPending}
+              >
+                {updateCommentMutation.isPending && <Loader2 size={14} className="inline mr-1 animate-spin" />}
+                <Check size={14} className="inline mr-1" /> 保存
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div
+            className="cursor-pointer"
+            onClick={handleContentClick}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault()
+                handleContentClick()
+              }
+            }}
+          >
+            <p className="text-sm text-foreground leading-relaxed break-words hover:text-primary/80 transition-colors">
+              {comment.content}
+            </p>
+            {!isReply && (
+              <span className="mt-1 block text-xs text-muted-foreground hover:text-primary transition-colors">
+                回复 ({comment.replies?.length || 0})
+              </span>
+            )}
+            {isReply && (
+              <span className="mt-1 inline-flex items-center text-xs text-muted-foreground hover:text-primary transition-colors">
+                <MessageSquare size={14} className="mr-1" />
+                回复
+              </span>
+            )}
+          </div>
+        )}
       </div>
-    </Card>
+    </div>
   )
 }
+
+export default CommentItem
