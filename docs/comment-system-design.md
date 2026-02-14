@@ -13,7 +13,7 @@
 **待实现**：
 
 1. React Query Hooks
-2. 实时订阅支持
+2. 实时订阅支持（第一期不用实现）
 3. 前端组件集成
 
 ---
@@ -32,14 +32,14 @@
 │  - query-keys.ts       → React Query keys                  │
 │  - useComments.ts      → useQuery hook                      │
 │  - useCommentMutations.ts → useMutation hooks               │
-│  - useCommentSubscriptions.ts → 实时订阅                    │
+│  - useCommentSubscriptions.ts → 实时订阅（第一期不用实现）                 │
 └─────────────────────────┬───────────────────────────────────┘
                           │
                           ▼
 ┌─────────────────────────────────────────────────────────────┐
 │                    Supabase Database                         │
 │  - comments table with RLS policies                          │
-│  - Realtime enabled                                         │
+│  - Realtime enabled（第一期不用实现）                                          │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -56,23 +56,23 @@
 
 评论系统使用 `comments` 表：
 
-| 字段            | 类型          | 说明                              |
-| --------------- | ------------- | --------------------------------- |
-| `id`           | uuid          | 主键，自动生成                    |
-| `content`      | text          | 评论内容                          |
-| `task_id`      | uuid          | 关联任务 ID（与 project_id 互斥） |
-| `project_id`    | uuid          | 关联项目 ID（与 task_id 互斥）    |
-| `parent_id`    | uuid          | 父评论 ID，null 表示一级评论      |
-| `user_id`      | uuid          | 评论作者                          |
-| `mention_ids`   | uuid[]        | 被 @ 的用户 ID 数组              |
-| `created_at`   | timestamptz   | 创建时间                          |
-| `updated_at`   | timestamptz   | 更新时间                          |
+| 字段          | 类型        | 说明                              |
+| ------------- | ----------- | --------------------------------- |
+| `id`          | uuid        | 主键，自动生成                    |
+| `content`     | text        | 评论内容                          |
+| `task_id`     | uuid        | 关联任务 ID（与 project_id 互斥） |
+| `project_id`  | uuid        | 关联项目 ID（与 task_id 互斥）    |
+| `parent_id`   | uuid        | 父评论 ID，null 表示一级评论      |
+| `user_id`     | uuid        | 评论作者                          |
+| `mention_ids` | uuid[]      | 被 @ 的用户 ID 数组               |
+| `created_at`  | timestamptz | 创建时间                          |
+| `updated_at`  | timestamptz | 更新时间                          |
 
 同时在 `tasks` 和 `projects` 表中添加评论统计字段：
 
-| 字段             | 类型 | 说明       |
-| ---------------- | ---- | ---------- |
-| `comments_count` | int  | 评论数量   |
+| 字段             | 类型 | 说明     |
+| ---------------- | ---- | -------- |
+| `comments_count` | int  | 评论数量 |
 
 **约束**：
 
@@ -130,7 +130,7 @@ lib/queries/comments/
 ├── query-keys.ts             # Query keys
 ├── useComments.ts            # useQuery hook
 ├── useCommentMutations.ts    # useMutation hooks
-├── useCommentSubscriptions.ts # 实时订阅
+├── useCommentSubscriptions.ts # 实时订阅（第一期不用实现）
 └── index.ts                  # 统一导出
 ```
 
@@ -226,7 +226,7 @@ export function useDeleteComment() {
 }
 ```
 
-### 2.4 useCommentSubscriptions
+### 2.4 useCommentSubscriptions（第一期不用实现）
 
 ```typescript
 // lib/queries/comments/useCommentSubscriptions.ts
@@ -441,7 +441,7 @@ CREATE TRIGGER update_comments_count
 | 列表页   | N 次查询   | N 次读取  |
 | 写入性能 | 无额外开销 | +1 UPDATE |
 
-### 5.2 Realtime 配置
+### 5.2 Realtime 配置（第一期不用实现）
 
 在 Supabase Dashboard 中启用 `comments` 表的 Realtime：
 
@@ -469,42 +469,42 @@ Supabase 内联查询无法直接限制子记录数量，采用两次查询方�
 
 ```typescript
 // lib/queries/comments/fetch-comments.ts
-import { createClient } from '@/lib/supabase/client'
-import { Comment, Profile } from '@/types/database'
+import { createClient } from "@/lib/supabase/client";
+import { Comment, Profile } from "@/types/database";
 
 interface FetchOptions {
-  taskId?: string
-  projectId?: string
-  limit?: number
-  cursor?: string
+  taskId?: string;
+  projectId?: string;
+  limit?: number;
+  cursor?: string;
 }
 
 interface Reply {
-  id: string
-  content: string
-  createdAt: Date
-  user: Pick<Profile, 'id' | 'name' | 'avatarUrl'>
+  id: string;
+  content: string;
+  createdAt: Date;
+  user: Pick<Profile, "id" | "name" | "avatarUrl">;
 }
 
-interface CommentWithReplies extends Omit<Comment, 'replies'> {
-  replies: Reply[]
-  repliesCount: number
-  repliesLoaded: number
-  hasMoreReplies: boolean
+interface CommentWithReplies extends Omit<Comment, "replies"> {
+  replies: Reply[];
+  repliesCount: number;
+  repliesLoaded: number;
+  hasMoreReplies: boolean;
 }
 
 // 回复数量限制
-const REPLIES_LIMIT = 3
+const REPLIES_LIMIT = 3;
 
 export async function fetchCommentsWithReplies(
   options: FetchOptions
 ): Promise<{ data: CommentWithReplies[]; nextCursor: string | null }> {
-  const supabase = createClient()
-  const { taskId, projectId, limit = 10, cursor } = options
+  const supabase = createClient();
+  const { taskId, projectId, limit = 10, cursor } = options;
 
   // 1. 查询主评论
   let mainQuery = supabase
-    .from('comments')
+    .from("comments")
     .select(
       `
       *,
@@ -515,24 +515,24 @@ export async function fetchCommentsWithReplies(
       )
     `
     )
-    .eq('task_id', taskId!)
-    .is('parent_id', null)
-    .order('created_at', { ascending: false })
-    .limit(limit)
+    .eq("task_id", taskId!)
+    .is("parent_id", null)
+    .order("created_at", { ascending: false })
+    .limit(limit);
 
   if (cursor) {
-    mainQuery = mainQuery.lt('created_at', cursor)
+    mainQuery = mainQuery.lt("created_at", cursor);
   }
 
-  const { data: mainComments, error } = await mainQuery
-  if (error) throw error
+  const { data: mainComments, error } = await mainQuery;
+  if (error) throw error;
 
   // 2. 获取主评论 IDs
-  const mainIds = mainComments.map((c) => c.id)
+  const mainIds = mainComments.map((c) => c.id);
 
   // 3. 查询所有回复（然后在代码中限制前 3 条）
   const { data: allReplies, error: repliesError } = await supabase
-    .from('comments')
+    .from("comments")
     .select(
       `
       *,
@@ -543,27 +543,27 @@ export async function fetchCommentsWithReplies(
       )
     `
     )
-    .in('parent_id', mainIds)
-    .order('created_at', { ascending: true })
+    .in("parent_id", mainIds)
+    .order("created_at", { ascending: true });
 
-  if (repliesError) throw repliesError
+  if (repliesError) throw repliesError;
 
   // 4. 按 parent_id 分组，每组取前 3 条
-  const repliesMap = new Map<string, typeof allReplies>()
-  const repliesCountMap = new Map<string, number>()
+  const repliesMap = new Map<string, typeof allReplies>();
+  const repliesCountMap = new Map<string, number>();
 
   // 先按 parent_id 分组
   allReplies?.forEach((reply) => {
-    const list = repliesMap.get(reply.parent_id) || []
-    list.push(reply)
-    repliesMap.set(reply.parent_id, list)
-  })
+    const list = repliesMap.get(reply.parent_id) || [];
+    list.push(reply);
+    repliesMap.set(reply.parent_id, list);
+  });
 
   // 计算每组总数
   mainIds.forEach((id) => {
-    const total = allReplies?.filter((r) => r.parent_id === id).length || 0
-    repliesCountMap.set(id, total)
-  })
+    const total = allReplies?.filter((r) => r.parent_id === id).length || 0;
+    repliesCountMap.set(id, total);
+  });
 
   // 5. 构建返回结构
   const comments: CommentWithReplies[] = mainComments.map((comment) => {
@@ -578,9 +578,9 @@ export async function fetchCommentsWithReplies(
           name: reply.user.name,
           avatarUrl: reply.user.avatar_url,
         },
-      }))
+      }));
 
-    const totalCount = repliesCountMap.get(comment.id) || 0
+    const totalCount = repliesCountMap.get(comment.id) || 0;
 
     return {
       id: comment.id,
@@ -600,28 +600,99 @@ export async function fetchCommentsWithReplies(
       repliesCount: totalCount,
       repliesLoaded: replies.length,
       hasMoreReplies: totalCount > replies.length,
-    }
-  })
+    };
+  });
 
   return {
     data: comments,
     nextCursor:
-      mainComments.length > 0 ? mainComments[mainComments.length - 1].created_at : null,
-  }
+      mainComments.length > 0
+        ? mainComments[mainComments.length - 1].created_at
+        : null,
+  };
 }
 ```
 
 **查询说明**：
 
-| 步骤 | 查询内容 | 说明 |
-|------|---------|------|
-| 1 | 主评论 | 获取最新 10 条一级评论 |
-| 2 | 主评论 IDs | 收集 IDs 用于后续查询 |
-| 3 | 所有回复 | 查询所有主评论的回复 |
-| 4 | 分组限制 | 代码中每组取前 3 条 |
-| 5 | 构建结构 | 组装返回数据 |
+| 步骤 | 查询内容   | 说明                   |
+| ---- | ---------- | ---------------------- |
+| 1    | 主评论     | 获取最新 10 条一级评论 |
+| 2    | 主评论 IDs | 收集 IDs 用于后续查询  |
+| 3    | 所有回复   | 查询所有主评论的回复   |
+| 4    | 分组限制   | 代码中每组取前 3 条    |
+| 5    | 构建结构   | 组装返回数据           |
 
 **优势**：虽然有 2 次查询，但查询条件简单，性能良好，且灵活可控。
+
+**返回 JSON 格式**：
+
+```json
+{
+  "data": [
+    {
+      "id": "c1",
+      "content": "这是一个主评论",
+      "taskId": "t1",
+      "projectId": null,
+      "parentId": null,
+      "userId": "u1",
+      "createdAt": "2024-01-15T10:00:00Z",
+      "updatedAt": "2024-01-15T10:00:00Z",
+      "user": {
+        "id": "u1",
+        "name": "Alice",
+        "avatarUrl": "https://example.com/avatar1.png"
+      },
+      "replies": [
+        {
+          "id": "r1",
+          "content": "这是回复1",
+          "createdAt": "2024-01-15T10:05:00Z",
+          "user": {
+            "id": "u2",
+            "name": "Bob",
+            "avatarUrl": "https://example.com/avatar2.png"
+          }
+        },
+        {
+          "id": "r2",
+          "content": "这是回复2",
+          "createdAt": "2024-01-15T10:10:00Z",
+          "user": {
+            "id": "u3",
+            "name": "Charlie",
+            "avatarUrl": "https://example.com/avatar3.png"
+          }
+        }
+      ],
+      "repliesCount": 5,
+      "repliesLoaded": 3,
+      "hasMoreReplies": true
+    },
+    {
+      "id": "c2",
+      "content": "这是另一个主评论",
+      "replies": [],
+      "repliesCount": 0,
+      "repliesLoaded": 0,
+      "hasMoreReplies": false,
+      ...
+    }
+  ],
+  "nextCursor": "2024-01-15T09:00:00Z"
+}
+```
+
+**字段说明**：
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| `replies` | Reply[] | 当前已加载的回复列表（最多 3 条） |
+| `repliesCount` | number | 该评论下回复的总数 |
+| `repliesLoaded` | number | 当前已加载的回复数量 |
+| `hasMoreReplies` | boolean | 是否有更多回复未加载 |
+| `nextCursor` | string \| null | 下一页的游标，null 表示没有更多数据 |
 
 ### 6.3 获取单个评论的全部回复
 
@@ -629,21 +700,21 @@ export async function fetchCommentsWithReplies(
 
 ```typescript
 // lib/queries/comments/fetch-replies.ts
-import { createClient } from '@/lib/supabase/client'
-import { Comment, Profile } from '@/types/database'
+import { createClient } from "@/lib/supabase/client";
+import { Comment, Profile } from "@/types/database";
 
 interface Reply {
-  id: string
-  content: string
-  createdAt: Date
-  user: Pick<Profile, 'id' | 'name' | 'avatarUrl'>
+  id: string;
+  content: string;
+  createdAt: Date;
+  user: Pick<Profile, "id" | "name" | "avatarUrl">;
 }
 
 export async function fetchAllReplies(parentId: string): Promise<Reply[]> {
-  const supabase = createClient()
+  const supabase = createClient();
 
   const { data, error } = await supabase
-    .from('comments')
+    .from("comments")
     .select(
       `
       id,
@@ -656,10 +727,10 @@ export async function fetchAllReplies(parentId: string): Promise<Reply[]> {
       )
     `
     )
-    .eq('parent_id', parentId)
-    .order('created_at', { ascending: true })
+    .eq("parent_id", parentId)
+    .order("created_at", { ascending: true });
 
-  if (error) throw error
+  if (error) throw error;
 
   return data.map((reply: any) => ({
     id: reply.id,
@@ -670,7 +741,7 @@ export async function fetchAllReplies(parentId: string): Promise<Reply[]> {
       name: reply.user.name,
       avatarUrl: reply.user.avatar_url,
     },
-  }))
+  }));
 }
 ```
 
@@ -678,24 +749,24 @@ export async function fetchAllReplies(parentId: string): Promise<Reply[]> {
 
 ```typescript
 // lib/queries/comments/useComments.ts
-import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { fetchCommentsWithReplies, fetchAllReplies } from './fetch-comments'
-import { commentKeys } from './query-keys'
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { fetchCommentsWithReplies, fetchAllReplies } from "./fetch-comments";
+import { commentKeys } from "./query-keys";
 
 export function useComments(options: { taskId?: string; projectId?: string }) {
   return useQuery({
     queryKey: commentKeys.list(options),
     queryFn: () => fetchCommentsWithReplies(options),
     staleTime: 5 * 60 * 1000,
-  })
+  });
 }
 
 export function useReplies(parentId: string) {
   return useQuery({
-    queryKey: ['replies', parentId],
+    queryKey: ["replies", parentId],
     queryFn: () => fetchAllReplies(parentId),
     enabled: !!parentId,
-  })
+  });
 }
 ```
 
@@ -703,15 +774,16 @@ export function useReplies(parentId: string) {
 
 ```typescript
 // components/comments/CommentsSection.tsx
-'use client'
+"use client";
 
-import { useComments } from '@/lib/queries/comments'
-import { useState } from 'react'
+import { useComments } from "@/lib/queries/comments";
+import { useState } from "react";
 
 export function CommentsSection({ taskId }: { taskId: string }) {
-  const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useInfiniteQuery({
-    // ... 使用 TanStack Query 的 useInfiniteQuery
-  })
+  const { data, fetchNextPage, hasNextPage, isFetchingNextPage } =
+    useInfiniteQuery({
+      // ... 使用 TanStack Query 的 useInfiniteQuery
+    });
 
   return (
     <div className="space-y-4">
@@ -724,15 +796,15 @@ export function CommentsSection({ taskId }: { taskId: string }) {
       ))}
       {hasNextPage && (
         <button onClick={() => fetchNextPage()}>
-          {isFetchingNextPage ? '加载中...' : '加载更多'}
+          {isFetchingNextPage ? "加载中..." : "加载更多"}
         </button>
       )}
     </div>
-  )
+  );
 }
 
 function CommentItem({ comment }: { comment: CommentWithReplies }) {
-  const [showAllReplies, setShowAllReplies] = useState(false)
+  const [showAllReplies, setShowAllReplies] = useState(false);
 
   return (
     <div className="border rounded-lg p-4">
@@ -764,7 +836,7 @@ function CommentItem({ comment }: { comment: CommentWithReplies }) {
         </div>
       )}
     </div>
-  )
+  );
 }
 ```
 
