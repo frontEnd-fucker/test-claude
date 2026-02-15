@@ -126,7 +126,7 @@ export default function NotesEditor() {
                 value={content}
                 onChange={(e) => setContent(e.target.value)}
                 placeholder="Start typing your note..."
-                className="min-h-[200px] font-mono text-sm"
+                className="min-h-[200px] font-mono text-sm bg-amber-50/50 border-amber-200 focus-visible:bg-amber-50"
                 rows={10}
               />
               <div className="flex justify-end gap-2">
@@ -140,11 +140,11 @@ export default function NotesEditor() {
               </div>
             </div>
           ) : (
-            <Card className="p-4">
+            <Card className="p-4 bg-amber-50/50 border-amber-200">
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
-                  <FileText className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-sm font-medium">
+                  <FileText className="h-4 w-4 text-amber-600/70" />
+                  <span className="text-sm font-medium text-amber-900/70">
                     {activeNote
                       ? new Date(activeNote.updatedAt).toLocaleDateString('en-US', {
                           month: 'short',
@@ -157,7 +157,7 @@ export default function NotesEditor() {
                   Edit
                 </Button>
               </div>
-              <pre className="whitespace-pre-wrap font-mono text-sm text-muted-foreground">
+              <pre className="whitespace-pre-wrap font-mono text-sm text-amber-900/80">
                 {activeNote?.content || 'No note selected'}
               </pre>
             </Card>
@@ -171,21 +171,23 @@ export default function NotesEditor() {
               <Card
                 key={note.id}
                 className={cn(
-                  'p-3 cursor-pointer transition-colors hover:bg-muted/50',
-                  activeNote?.id === note.id && 'bg-muted border-primary'
+                  'p-3 cursor-pointer transition-colors',
+                  activeNote?.id === note.id
+                    ? 'bg-amber-100/60 border-amber-300'
+                    : 'bg-amber-50/40 border-amber-100 hover:bg-amber-100/60'
                 )}
                 onClick={() => setActiveNote(note.id)}
               >
                 <div className="flex items-center justify-between">
-                  <FileText className="h-3.5 w-3.5 text-muted-foreground" />
-                  <span className="text-xs text-muted-foreground">
+                  <FileText className="h-3.5 w-3.5 text-amber-600/70" />
+                  <span className="text-xs text-amber-700/60">
                     {new Date(note.updatedAt).toLocaleDateString('en-US', {
                       month: 'short',
                       day: 'numeric',
                     })}
                   </span>
                 </div>
-                <p className="mt-2 line-clamp-3 text-xs font-mono">
+                <p className="mt-2 line-clamp-3 text-xs font-mono text-amber-900/70">
                   {note.content.substring(0, 100)}
                   {note.content.length > 100 && '...'}
                 </p>
