@@ -3,6 +3,7 @@
     "dev-browser@dev-browser-marketplace": false,
     "document-skills@anthropic-agent-skills": false,
     "example-skills@anthropic-agent-skills": false,
-    "developer-essentials@claude-code-workflows": true
+    "developer-essentials@claude-code-workflows": true,
+    "github@claude-plugins-official": true
   }
 }

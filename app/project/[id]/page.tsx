@@ -12,6 +12,7 @@ import NotesEditor from "@/components/notes/NotesEditor";
 import ProjectMembers from "@/components/project/ProjectMembers";
 import { AITaskInput } from "@/components/ai";
 import { AuthGuard } from "@/components/auth/AuthGuard";
+import ProjectTimeline from "@/components/timeline/ProjectTimeline";
 import {
   Skeleton,
   CardSkeleton,
@@ -163,6 +164,11 @@ export default function ProjectDetailPage() {
 
         {/* Main dashboard layout */}
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+          {/* Timeline - full width across the screen */}
+          <div className="lg:col-span-4">
+            <ProjectTimeline />
+          </div>
+
           {/* Left Sidebar - Quick Tasks & Notes */}
           <div className="lg:col-span-1">
             <div className="sticky top-16 space-y-4">
