@@ -91,7 +91,8 @@ export async function createTask(
   description?: string,
   priority?: PriorityLevel,
   status: TaskStatus = 'todo',
-  projectId?: string
+  projectId?: string,
+  dueDate?: Date
 ): Promise<Task> {
   const supabase = createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -122,6 +123,7 @@ export async function createTask(
       position,
       project_id: projectId,
       user_id: user.id,
+      due_date: dueDate ? dueDate.toISOString() : null,
     })
     .select()
     .single()

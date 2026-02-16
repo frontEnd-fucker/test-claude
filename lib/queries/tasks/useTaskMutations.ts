@@ -19,12 +19,14 @@ export function useCreateTask() {
       priority?: PriorityLevel
       status?: TaskStatus
       projectId?: string
+      dueDate?: Date
     }) => createTask(
       params.title,
       params.description,
       params.priority,
       params.status,
-      params.projectId ?? routeProjectId
+      params.projectId ?? routeProjectId,
+      params.dueDate
     ),
     onMutate: async (params) => {
       // Cancel any outgoing refetches
@@ -43,6 +45,7 @@ export function useCreateTask() {
         status: (params.status || 'todo') as TaskStatus,
         priority: params.priority as PriorityLevel,
         position: 1, // Will be adjusted by server
+        dueDate: params.dueDate,
         userId: 'temp-user',
         projectId: params.projectId ?? routeProjectId ?? '',
         createdAt: new Date(),

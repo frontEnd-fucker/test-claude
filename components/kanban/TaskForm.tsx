@@ -23,7 +23,7 @@ interface TaskFormProps {
   buttonVariant?: 'default' | 'outline' | 'secondary' | 'ghost' | 'link' | 'destructive'
   buttonSize?: 'default' | 'sm' | 'lg' | 'icon'
   showIcon?: boolean
-  onSubmit?: (taskData: { title: string; description?: string; priority?: 'low' | 'medium' | 'high'; status: TaskStatus }) => void
+  onSubmit?: (taskData: { title: string; description?: string; priority?: 'low' | 'medium' | 'high'; dueDate?: Date; status: TaskStatus }) => void
   open?: boolean
   onOpenChange?: (open: boolean) => void
   hideTrigger?: boolean
@@ -47,6 +47,7 @@ export default function TaskForm({
   const [title, setTitle] = useState(task?.title || '')
   const [description, setDescription] = useState(task?.description || '')
   const [priority, setPriority] = useState<'low' | 'medium' | 'high'>(task?.priority || 'medium')
+  const [dueDate, setDueDate] = useState(task?.dueDate ? task.dueDate.toLocaleDateString('en-CA') : '')
   const createTaskMutation = useCreateTask()
   const updateTaskMutation = useUpdateTask()
 
@@ -56,6 +57,7 @@ export default function TaskForm({
       setTitle(task.title)
       setDescription(task.description || '')
       setPriority(task.priority || 'medium')
+      setDueDate(task.dueDate ? task.dueDate.toLocaleDateString('en-CA') : '')
     }
   }, [task])
 
@@ -63,13 +65,16 @@ export default function TaskForm({
     e.preventDefault()
     if (!title.trim()) return
 
+    // Convert dueDate string to Date object or undefined
+    const dueDateValue = dueDate ? new Date(dueDate) : undefined
+
     if (onSubmit) {
-      onSubmit({ title, description, priority, status: task?.status || status })
+      onSubmit({ title, description, priority, dueDate: dueDateValue, status: task?.status || status })
     } else if (task) {
       // Edit mode
       updateTaskMutation.mutate({
         id: task.id,
-        updates: { title, description, priority, status: task.status },
+        updates: { title, description, priority, dueDate: dueDateValue, status: task.status },
       })
     } else {
       // Create mode
@@ -78,6 +83,7 @@ export default function TaskForm({
         description,
         priority,
         status,
+        dueDate: dueDateValue,
       })
     }
 
@@ -86,6 +92,7 @@ export default function TaskForm({
       setTitle('')
       setDescription('')
       setPriority('medium')
+      setDueDate('')
     }
     setOpen(false)
   }
@@ -138,6 +145,25 @@ export default function TaskForm({
                 <SelectItem value="high">High</SelectItem>
               </SelectContent>
             </Select>
+          </div>
+          <div>
+            <label className="text-sm font-medium">Due Date (optional)</label>
+            <Input
+              type="date"
+              value={dueDate}
+              onChange={(e) => setDueDate(e.target.value)}
+              className="w-full"
+            />
+            {dueDate && (
+              <p className="text-sm text-muted-foreground mt-2">
+                {new Date(dueDate).toLocaleDateString('en-US', {
+                  weekday: 'long',
+                  year: 'numeric',
+                  month: 'long',
+                  day: 'numeric',
+                })}
+              </p>
+            )}
           </div>
           <div className="flex justify-end gap-2">
             <Button type="button" variant="outline" onClick={() => setOpen(false)}>
