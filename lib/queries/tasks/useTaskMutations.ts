@@ -121,6 +121,8 @@ export function useCreateTask() {
           }
         })
       }
+
+      toast.success('Task created successfully')
     },
     onSettled: () => {
       // Always refetch after error or success
@@ -224,9 +226,11 @@ export function useUpdateTask() {
         })
       }
 
-      // Only show success toast for assignee changes to avoid too many notifications
+      // Show success toast for task updates
       if ('assigneeId' in variables.updates) {
         toast.success('Task assigned successfully')
+      } else {
+        toast.success('Task updated successfully')
       }
     },
     onSettled: (data, error, variables) => {
