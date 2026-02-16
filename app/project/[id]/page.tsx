@@ -166,7 +166,7 @@ export default function ProjectDetailPage() {
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           {/* Timeline - full width across the screen */}
           <div className="lg:col-span-4">
-            <ProjectTimeline />
+            <ProjectTimeline projectId={projectId} />
           </div>
 
           {/* Left Sidebar - Quick Tasks & Notes */}

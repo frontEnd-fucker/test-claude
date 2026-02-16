@@ -12,6 +12,11 @@ import {
 } from "chart.js";
 import "chartjs-adapter-date-fns";
 import { useMemo, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { AlertCircle, Calendar } from "lucide-react";
+import { format } from "date-fns";
+import { useTimelineData } from "@/lib/queries/tasks";
+import { taskKeys } from "@/lib/queries/tasks";
 
 ChartJS.register(
   CategoryScale,
@@ -48,7 +53,7 @@ const todayLinePlugin = {
     ctx.fillStyle = "#f59e0b";
     ctx.font = "12px sans-serif";
     ctx.textAlign = "center";
-    ctx.fillText("现在", x, yAxis.top - 5);
+    ctx.fillText("Now", x, yAxis.top - 5);
     ctx.restore();
   },
 };
@@ -132,6 +137,10 @@ interface AggregatedPoint {
   y: number;
 }
 
+interface ProjectTimelineProps {
+  projectId?: string;
+}
+
 type TimelinePoint = TimelineTask | AggregatedPoint;
 
 // 解析日期字符串为本地时间戳
@@ -141,73 +150,12 @@ const parseLocalDate = (dateStr: string): number => {
   return new Date(year, month - 1, day).getTime();
 };
 
-// 格式化日期为 "M月D日" 格式
+// Format date as "MMM d" (e.g., "Feb 20")
 const formatDate = (dateStr: string) => {
   const [year, month, day] = dateStr.split("-").map(Number);
-  return `${month}月${day}日`;
+  const date = new Date(year, month - 1, day);
+  return format(date, 'MMM d');
 };
-const mockTasks: TimelineTask[] = [
-  { id: "1", title: "完成需求文档", dueDate: "2026-02-10", status: "complete" },
-  {
-    id: "2",
-    title: "设计数据库架构",
-    dueDate: "2026-02-12",
-    status: "complete",
-  },
-  { id: "3", title: "创建用户表", dueDate: "2026-02-12", status: "complete" },
-  {
-    id: "4",
-    title: "设计商品表",
-    dueDate: "2026-02-12",
-    status: "in-progress",
-  },
-  {
-    id: "5",
-    title: "设计数据库架构",
-    dueDate: "2026-02-15",
-    status: "in-progress",
-  },
-  {
-    id: "6",
-    title: "开发登录API",
-    dueDate: "2026-02-15",
-    status: "in-progress",
-  },
-  { id: "7", title: "开发注册API", dueDate: "2026-02-15", status: "todo" },
-  { id: "8", title: "开发用户认证模块", dueDate: "2026-02-18", status: "todo" },
-  // 2月20日 - 12个任务
-  { id: "9", title: "API 接口开发", dueDate: "2026-02-20", status: "todo" },
-  {
-    id: "10",
-    title: "前端页面开发",
-    dueDate: "2026-02-20",
-    status: "in-progress",
-  },
-  { id: "11", title: "购物车功能开发", dueDate: "2026-02-20", status: "todo" },
-  {
-    id: "12",
-    title: "用户界面设计",
-    dueDate: "2026-02-20",
-    status: "complete",
-  },
-  {
-    id: "13",
-    title: "后端API开发",
-    dueDate: "2026-02-20",
-    status: "in-progress",
-  },
-  { id: "14", title: "数据库优化", dueDate: "2026-02-20", status: "todo" },
-  { id: "15", title: "集成测试", dueDate: "2026-02-20", status: "todo" },
-  { id: "16", title: "性能测试", dueDate: "2026-02-20", status: "in-progress" },
-  { id: "17", title: "安全审计", dueDate: "2026-02-20", status: "todo" },
-  { id: "18", title: "文档编写", dueDate: "2026-02-20", status: "complete" },
-  { id: "19", title: "部署配置", dueDate: "2026-02-20", status: "todo" },
-  { id: "20", title: "监控设置", dueDate: "2026-02-20", status: "in-progress" },
-  // 其他日期的任务
-  { id: "21", title: "集成测试", dueDate: "2026-02-22", status: "todo" },
-  { id: "22", title: "性能优化", dueDate: "2026-02-22", status: "todo" },
-  { id: "23", title: "部署上线", dueDate: "2026-02-25", status: "todo" },
-];
 
 const statusColors = {
   todo: "#ef4444", // 红色
@@ -216,22 +164,31 @@ const statusColors = {
 };
 
 const statusLabels = {
-  todo: "待处理",
-  "in-progress": "进行中",
-  complete: "已完成",
+  todo: "Todo",
+  "in-progress": "In Progress",
+  complete: "Complete",
 };
 
-export default function ProjectTimeline() {
+export default function ProjectTimeline({ projectId }: ProjectTimelineProps) {
   const [hoveredPoint, setHoveredPoint] = useState<TimelinePoint | null>(null);
   const [mousePosition, setMousePosition] = useState<{ x: number; y: number } | null>(null);
   const MAX_VISIBLE_TASKS_IN_TOOLTIP = 5;
+  const queryClient = useQueryClient();
+  const {
+    data: timelineData,
+    isLoading,
+    error,
+  } = useTimelineData(projectId);
+
+  const tasks = timelineData?.timelineTasks || [];
+  const noDueDateTasks = timelineData?.noDueDateTasks || [];
 
   const chartData = useMemo(() => {
     const MAX_VISIBLE_PER_DAY = 6; // 每天最多显示6个点，第6个是聚合点
     const SPACING = 0.35;
 
     // 按日期排序
-    const sortedTasks = [...mockTasks].sort(
+    const sortedTasks = [...tasks].sort(
       (a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime(),
     );
 
@@ -338,11 +295,35 @@ export default function ProjectTimeline() {
     const maxY = pointsToShow.reduce((max, point) => Math.max(max, point.y), 0);
 
     return { datasets, maxY, pointsToShow };
-  }, []);
+  }, [tasks]);
 
-  // 生成 x 轴范围（增加偏移空间）
-  const minDate = parseLocalDate("2026-02-05");
-  const maxDate = parseLocalDate("2026-03-01");
+  // 动态生成 x 轴范围（基于实际任务日期）
+  const { minDate, maxDate } = useMemo(() => {
+    const dates = tasks
+      .filter(task => task.dueDate)
+      .map(task => new Date(task.dueDate).getTime());
+
+    if (dates.length === 0) {
+      // 默认范围：当前日期前后7天
+      const now = new Date();
+      const defaultMin = new Date(now.setDate(now.getDate() - 7)).getTime();
+      const defaultMax = new Date(now.setDate(now.getDate() + 14)).getTime(); // 总共21天范围
+      return {
+        minDate: defaultMin,
+        maxDate: defaultMax,
+      };
+    }
+
+    const minDate = Math.min(...dates);
+    const maxDate = Math.max(...dates);
+
+    // 添加缓冲期（3天）
+    const buffer = 3 * 24 * 60 * 60 * 1000;
+    return {
+      minDate: minDate - buffer,
+      maxDate: maxDate + buffer,
+    };
+  }, [tasks]);
 
   const options = useMemo(
     () => ({
@@ -356,7 +337,7 @@ export default function ProjectTimeline() {
             unit: "day",
             round: "day",
             displayFormats: {
-              day: "M月d日",
+              day: "MMM d",
             },
           },
           min: minDate,
@@ -443,111 +424,190 @@ export default function ProjectTimeline() {
         }
       },
     }),
-    [chartData.maxY],
+    [chartData.maxY, minDate, maxDate],
   );
 
   return (
-    <div className="rounded-xl border bg-card p-4 shadow-sm">
-      <div className="mb-4 flex items-center justify-between">
-        <h2 className="text-lg font-semibold flex items-center gap-2">
-          <span className="h-2 w-2 rounded-full bg-neon-cyan" />
-          项目时间线
-        </h2>
-        <span className="text-sm text-muted-foreground">
-          共 {mockTasks.length} 个任务
-        </span>
-      </div>
+    <>
+      {isLoading ? (
+        <div className="h-[400px] bg-gray-50 animate-pulse rounded-lg" />
+      ) : error ? (
+        <div className="h-[400px] flex items-center justify-center border border-red-200 bg-red-50 rounded-lg">
+          <div className="text-center">
+            <AlertCircle className="w-8 h-8 text-red-500 mx-auto mb-2" />
+            <p className="text-red-700">Failed to load timeline data</p>
+            <button
+              onClick={() => queryClient.refetchQueries({ queryKey: taskKeys.timeline(projectId) })}
+              className="mt-2 px-4 py-2 text-sm bg-red-100 text-red-700 rounded hover:bg-red-200"
+            >
+              Retry
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div className="space-y-6">
+      {/* Timeline chart card */}
+      <div className="rounded-xl border bg-card p-4 shadow-sm">
+        <div className="mb-4 flex items-center justify-between">
+          <h2 className="text-lg font-semibold flex items-center gap-2">
+            <span className="h-2 w-2 rounded-full bg-neon-cyan" />
+            Project Timeline
+          </h2>
+          <span className="text-sm text-muted-foreground">
+            {tasks.length} task{tasks.length !== 1 ? 's' : ''} with due dates
+            {noDueDateTasks.length > 0 && ` • ${noDueDateTasks.length} without due dates`}
+          </span>
+        </div>
 
-      <div className="relative h-[180px]">
-        <Scatter data={{ datasets: chartData.datasets }} options={options} />
+        <div className="relative h-[180px]">
+          <Scatter data={{ datasets: chartData.datasets }} options={options} />
 
-        {/* 自定义 hover 提示 */}
-        {hoveredPoint && mousePosition && (
-          <div
-            className="absolute bg-gray-800 border border-gray-700 rounded-lg p-3 shadow-lg z-10"
-            style={{
-              backgroundColor: "#1f2937",
-              left: `${mousePosition.x}px`,
-              top: `${mousePosition.y}px`,
-              maxWidth: "320px",
-              maxHeight: "240px",
-              overflow: "hidden",
-            }}
-          >
-            {hoveredPoint.type === "aggregated" ? (
-              <>
-                <p className="font-medium text-white">
-                  📊 还有 {(hoveredPoint as AggregatedPoint).count} 个任务
-                </p>
-                <p className="text-sm text-gray-400">
-                  {formatDate((hoveredPoint as AggregatedPoint).date)}
-                </p>
-                <div className="mt-2 space-y-1 overflow-y-auto" style={{ maxHeight: "160px" }}>
-                  {(() => {
-                    const aggregated = hoveredPoint as AggregatedPoint;
-                    const allTasks = aggregated.tasks;
-                    const totalTasks = allTasks.length;
+          {/* Custom hover tooltip */}
+          {hoveredPoint && mousePosition && (
+            <div
+              className="absolute bg-gray-800 border border-gray-700 rounded-lg p-3 shadow-lg z-10"
+              style={{
+                backgroundColor: "#1f2937",
+                left: `${mousePosition.x}px`,
+                top: `${mousePosition.y}px`,
+                maxWidth: "320px",
+                maxHeight: "240px",
+                overflow: "hidden",
+              }}
+            >
+              {hoveredPoint.type === "aggregated" ? (
+                <>
+                  <p className="font-medium text-white">
+                    📊 {(hoveredPoint as AggregatedPoint).count} more tasks
+                  </p>
+                  <p className="text-sm text-gray-400">
+                    {formatDate((hoveredPoint as AggregatedPoint).date)}
+                  </p>
+                  <div className="mt-2 space-y-1 overflow-y-auto" style={{ maxHeight: "160px" }}>
+                    {(() => {
+                      const aggregated = hoveredPoint as AggregatedPoint;
+                      const allTasks = aggregated.tasks;
+                      const totalTasks = allTasks.length;
 
-                    if (totalTasks <= MAX_VISIBLE_TASKS_IN_TOOLTIP) {
-                      // 全部显示
-                      return allTasks.map((task) => (
-                        <div key={task.id} className="flex items-center gap-2">
-                          <div
-                            className="w-2 h-2 rounded-full"
-                            style={{ backgroundColor: statusColors[task.status] }}
-                          />
-                          <span className="text-sm text-gray-300 truncate">
-                            {task.title}
-                          </span>
-                        </div>
-                      ));
-                    } else {
-                      // 显示前 N 个任务 + 省略号
-                      const visibleTasks = allTasks.slice(0, MAX_VISIBLE_TASKS_IN_TOOLTIP);
-                      const remainingCount = totalTasks - MAX_VISIBLE_TASKS_IN_TOOLTIP;
-
-                      return (
-                        <>
-                          {visibleTasks.map((task) => (
-                            <div key={task.id} className="flex items-center gap-2">
-                              <div
-                                className="w-2 h-2 rounded-full"
-                                style={{ backgroundColor: statusColors[task.status] }}
-                              />
-                              <span className="text-sm text-gray-300 truncate">
-                                {task.title}
-                              </span>
-                            </div>
-                          ))}
-                          <div className="flex items-center gap-2 pt-1 border-t border-gray-700 mt-1">
-                            <div className="w-2 h-2 rounded-full bg-gray-600" />
-                            <span className="text-sm text-gray-400 italic">
-                              还有 {remainingCount} 个任务未显示...
+                      if (totalTasks <= MAX_VISIBLE_TASKS_IN_TOOLTIP) {
+                        // 全部显示
+                        return allTasks.map((task) => (
+                          <div key={task.id} className="flex items-center gap-2">
+                            <div
+                              className="w-2 h-2 rounded-full"
+                              style={{ backgroundColor: statusColors[task.status] }}
+                            />
+                            <span className="text-sm text-gray-300 truncate">
+                              {task.title}
                             </span>
                           </div>
-                        </>
-                      );
-                    }
-                  })()}
-                </div>
-              </>
-            ) : (
-              <>
-                <p className="font-medium text-white">{(hoveredPoint as TimelineTask).title}</p>
-                <p className="text-sm text-gray-400">
-                  {formatDate((hoveredPoint as TimelineTask).dueDate)}
-                </p>
-                <p
-                  className="text-sm"
-                  style={{ color: statusColors[(hoveredPoint as TimelineTask).status] }}
-                >
-                  {statusLabels[(hoveredPoint as TimelineTask).status]}
-                </p>
-              </>
+                        ));
+                      } else {
+                        // 显示前 N 个任务 + 省略号
+                        const visibleTasks = allTasks.slice(0, MAX_VISIBLE_TASKS_IN_TOOLTIP);
+                        const remainingCount = totalTasks - MAX_VISIBLE_TASKS_IN_TOOLTIP;
+
+                        return (
+                          <>
+                            {visibleTasks.map((task) => (
+                              <div key={task.id} className="flex items-center gap-2">
+                                <div
+                                  className="w-2 h-2 rounded-full"
+                                  style={{ backgroundColor: statusColors[task.status] }}
+                                />
+                                <span className="text-sm text-gray-300 truncate">
+                                  {task.title}
+                                </span>
+                              </div>
+                            ))}
+                            <div className="flex items-center gap-2 pt-1 border-t border-gray-700 mt-1">
+                              <div className="w-2 h-2 rounded-full bg-gray-600" />
+                              <span className="text-sm text-gray-400 italic">
+                                {remainingCount} more tasks not shown...
+                              </span>
+                            </div>
+                          </>
+                        );
+                      }
+                    })()}
+                  </div>
+                </>
+              ) : (
+                <>
+                  <p className="font-medium text-white">{(hoveredPoint as TimelineTask).title}</p>
+                  <p className="text-sm text-gray-400">
+                    {formatDate((hoveredPoint as TimelineTask).dueDate)}
+                  </p>
+                  <p
+                    className="text-sm"
+                    style={{ color: statusColors[(hoveredPoint as TimelineTask).status] }}
+                  >
+                    {statusLabels[(hoveredPoint as TimelineTask).status]}
+                  </p>
+                </>
+              )}
+            </div>
+          )}
+        </div>
+
+        {tasks.length === 0 && (
+          <div className="h-[180px] flex items-center justify-center">
+            <div className="text-center">
+              <Calendar className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+              <p className="text-gray-600">No tasks with due dates</p>
+              <p className="text-sm text-gray-500 mt-1">
+                Create tasks and set due dates to see them on the timeline
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* No due date tasks section */}
+        {noDueDateTasks.length > 0 && (
+          <div className="mt-6 pt-4 border-t border-gray-200">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-sm font-medium text-gray-700">
+                Tasks Without Due Dates ({noDueDateTasks.length})
+              </h3>
+              <span className="text-xs text-gray-500">Sorted by creation date</span>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {noDueDateTasks
+                .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+                .map((task) => (
+                  <div
+                    key={task.id}
+                    className="group relative"
+                    title={`${task.title} (${task.status}, created ${format(task.createdAt, "MMM d, yyyy")})`}
+                  >
+                    <div
+                      className={`w-4 h-4 rounded-full ${
+                        task.status === "todo"
+                          ? "bg-red-500"
+                          : task.status === "in-progress"
+                          ? "bg-blue-500"
+                          : "bg-green-500"
+                      } transition-transform group-hover:scale-125 cursor-help`}
+                    />
+                    {/* Tooltip on hover */}
+                    <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10 pointer-events-none">
+                      {task.title}
+                      <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-l-transparent border-r-transparent border-t-gray-800"></div>
+                    </div>
+                  </div>
+                ))}
+            </div>
+            {noDueDateTasks.length > 12 && (
+              <p className="text-xs text-gray-500 mt-2">
+                Showing {Math.min(12, noDueDateTasks.length)} of {noDueDateTasks.length} tasks
+              </p>
             )}
           </div>
         )}
       </div>
-    </div>
+
+        </div>
+      )}
+    </>
   );
 }

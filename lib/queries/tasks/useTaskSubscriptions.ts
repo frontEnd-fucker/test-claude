@@ -79,6 +79,20 @@ export function useTaskSubscriptions() {
             // 详情查询不需要处理INSERT事件
           })
 
+          // Invalidate timeline queries when task is inserted
+          // New task might have a due date or might be without due date
+          queryClient.invalidateQueries({
+            predicate: (query) => {
+              const queryKey = query.queryKey
+              // Check if this is a timeline query (contains 'timeline' in the key)
+              return (
+                Array.isArray(queryKey) &&
+                queryKey.includes('tasks') &&
+                queryKey.includes('timeline')
+              )
+            }
+          })
+
           break
         }
 
@@ -114,6 +128,20 @@ export function useTaskSubscriptions() {
             // 这样可以避免实时订阅干扰用户当前正在编辑的任务详情页
           })
 
+          // Invalidate timeline queries when task is updated
+          // Timeline data is derived data that needs to be recalculated
+          queryClient.invalidateQueries({
+            predicate: (query) => {
+              const queryKey = query.queryKey
+              // Check if this is a timeline query (contains 'timeline' in the key)
+              return (
+                Array.isArray(queryKey) &&
+                queryKey.includes('tasks') &&
+                queryKey.includes('timeline')
+              )
+            }
+          })
+
           break
         }
 
@@ -134,6 +162,20 @@ export function useTaskSubscriptions() {
             } else if (data && typeof data === 'object' && (data as Task).id === deletedId) {
               // 详情查询 - 设置为undefined
               queryClient.setQueryData(queryKey, undefined)
+            }
+          })
+
+          // Invalidate timeline queries when task is deleted
+          // Timeline data needs to be recalculated
+          queryClient.invalidateQueries({
+            predicate: (query) => {
+              const queryKey = query.queryKey
+              // Check if this is a timeline query (contains 'timeline' in the key)
+              return (
+                Array.isArray(queryKey) &&
+                queryKey.includes('tasks') &&
+                queryKey.includes('timeline')
+              )
             }
           })
 

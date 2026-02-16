@@ -142,3 +142,23 @@ export function isNote(obj: unknown): obj is Note {
 export function isComment(obj: unknown): obj is Comment {
   return !!(obj && typeof obj === 'object' && obj !== null && 'id' in obj && typeof obj.id === 'string' && 'content' in obj && typeof obj.content === 'string' && 'userId' in obj && typeof obj.userId === 'string')
 }
+
+// Timeline types for project timeline visualization
+export interface TimelineTask {
+  id: string;
+  title: string;
+  dueDate: string; // format: YYYY-MM-DD
+  status: TaskStatus;
+}
+
+export interface NoDueDateTask {
+  id: string;
+  title: string;
+  status: TaskStatus;
+  createdAt: Date;
+}
+
+export interface TimelineData {
+  timelineTasks: TimelineTask[];
+  noDueDateTasks: NoDueDateTask[];
+}

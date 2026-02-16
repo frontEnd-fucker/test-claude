@@ -205,6 +205,22 @@ export function useUpdateTask() {
         // Detail queries already handled above
       })
 
+      // Invalidate timeline query when due date or status is updated
+      // Timeline data is derived data that needs to be recalculated
+      if ('dueDate' in variables.updates || 'status' in variables.updates) {
+        queryClient.invalidateQueries({
+          predicate: (query) => {
+            const queryKey = query.queryKey
+            // Check if this is a timeline query (contains 'timeline' in the key)
+            return (
+              Array.isArray(queryKey) &&
+              queryKey.includes('tasks') &&
+              queryKey.includes('timeline')
+            )
+          }
+        })
+      }
+
       // Only show success toast for assignee changes to avoid too many notifications
       if ('assigneeId' in variables.updates) {
         toast.success('Task assigned successfully')

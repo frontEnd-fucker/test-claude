@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/client'
-import { Task, TaskStatus, PriorityLevel } from '@/types/database'
+import { Task, TaskStatus, PriorityLevel, TimelineData, TimelineTask, NoDueDateTask } from '@/types/database'
 
 /**
  * Fetch tasks for the current user
@@ -438,4 +438,43 @@ export async function createTasksBatch(
     createdAt: new Date(task.created_at),
     updatedAt: new Date(task.updated_at),
   })) as Task[]
+}
+
+/**
+ * Fetch timeline data for the current user
+ */
+export async function fetchTimelineData(projectId?: string): Promise<TimelineData> {
+  const tasks = await fetchTasks(projectId);
+
+  // Separate tasks with and without due dates
+  const timelineTasks: TimelineTask[] = [];
+  const noDueDateTasks: NoDueDateTask[] = [];
+
+  tasks.forEach(task => {
+    if (task.dueDate !== undefined) {
+      const dueDate = task.dueDate;
+      const year = dueDate.getFullYear();
+      const month = String(dueDate.getMonth() + 1).padStart(2, '0');
+      const day = String(dueDate.getDate()).padStart(2, '0');
+
+      timelineTasks.push({
+        id: task.id,
+        title: task.title,
+        dueDate: `${year}-${month}-${day}`,
+        status: task.status,
+      });
+    } else {
+      noDueDateTasks.push({
+        id: task.id,
+        title: task.title,
+        status: task.status,
+        createdAt: task.createdAt,
+      });
+    }
+  });
+
+  return {
+    timelineTasks,
+    noDueDateTasks,
+  };
 }
