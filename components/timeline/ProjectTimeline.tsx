@@ -1,19 +1,6 @@
 "use client";
 
-import { Scatter } from "react-chartjs-2";
-import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  Tooltip,
-  Legend,
-  TimeScale,
-  type Chart,
-  type ChartEvent,
-  type ActiveElement,
-} from "chart.js";
-import "chartjs-adapter-date-fns";
+import dynamic from "next/dynamic";
 import { useMemo, useState, useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { AlertCircle, Calendar, ChevronUp, ChevronDown } from "lucide-react";
@@ -22,14 +9,63 @@ import { useTimelineData } from "@/lib/queries/tasks";
 import { taskKeys } from "@/lib/queries/tasks";
 import { cn } from "@/lib/utils";
 
-ChartJS.register(
+// 静态组件定义
+const ChartLoadingState = () => (
+  <div className="h-[180px] flex items-center justify-center text-gray-500">
+    Loading chart...
+  </div>
+);
+
+// 动态导入图表库以减少初始包大小
+const Scatter = dynamic(
+  () => import("react-chartjs-2").then((mod) => mod.Scatter),
+  {
+    ssr: false,
+    loading: ChartLoadingState,
+  }
+);
+
+// Chart.js 类型导入（仅用于类型检查）
+import type {
+  Chart,
+  ChartEvent,
+  ActiveElement,
   CategoryScale,
   LinearScale,
-  TimeScale,
   PointElement,
   Tooltip,
   Legend,
+  TimeScale,
+} from "chart.js";
+
+// 静态 JSX 组件提取（减少重新创建）
+const ErrorState = ({ onRetry }: { onRetry: () => void }) => (
+  <div className="h-[400px] flex items-center justify-center border border-red-200 bg-red-50 rounded-lg">
+    <div className="text-center">
+      <AlertCircle className="w-8 h-8 text-red-500 mx-auto mb-2" />
+      <p className="text-red-700">Failed to load timeline data</p>
+      <button
+        onClick={onRetry}
+        className="mt-2 px-4 py-2 text-sm bg-red-100 text-red-700 rounded hover:bg-red-200"
+      >
+        Retry
+      </button>
+    </div>
+  </div>
 );
+
+const EmptyState = () => (
+  <div className="h-[180px] flex items-center justify-center">
+    <div className="text-center">
+      <Calendar className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+      <p className="text-gray-600">No tasks with due dates</p>
+      <p className="text-sm text-gray-500 mt-1">
+        Create tasks and set due dates to see them on the timeline
+      </p>
+    </div>
+  </div>
+);
+
 
 // 自定义 plugin：绘制当前时间的垂直线
 const todayLinePlugin = {
@@ -124,17 +160,6 @@ const aggregatedPointPlugin = {
   },
 };
 
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  TimeScale,
-  PointElement,
-  Tooltip,
-  Legend,
-  todayLinePlugin,
-  aggregatedPointPlugin,
-);
-
 interface TimelineTask {
   id: string;
   title: string;
@@ -192,19 +217,28 @@ const formatDate = (dateStr: string) => {
   return format(date, 'MMM d');
 };
 
-const statusColors = {
-  todo: "#ef4444", // 红色
-  "in-progress": "#3b82f6", // 蓝色
-  complete: "#22c55e", // 绿色
-};
+// 使用Map提高状态查找性能
+const statusColorsMap = new Map([
+  ['todo', '#ef4444'], // 红色
+  ['in-progress', '#3b82f6'], // 蓝色
+  ['complete', '#22c55e'], // 绿色
+]);
 
-const statusLabels = {
-  todo: "Todo",
-  "in-progress": "In Progress",
-  complete: "Complete",
-};
+const statusLabelsMap = new Map([
+  ['todo', 'Todo'],
+  ['in-progress', 'In Progress'],
+  ['complete', 'Complete'],
+]);
+
+// 向后兼容的辅助函数
+const getStatusColor = (status: 'todo' | 'in-progress' | 'complete'): string =>
+  statusColorsMap.get(status) || '#6b7280';
+
+const getStatusLabel = (status: 'todo' | 'in-progress' | 'complete'): string =>
+  statusLabelsMap.get(status) || 'Unknown';
 
 export default function ProjectTimeline({ projectId }: ProjectTimelineProps) {
+  const [isChartInitialized, setIsChartInitialized] = useState(false);
   const [hoveredPoint, setHoveredPoint] = useState<TimelinePoint | null>(null);
   const [mousePosition, setMousePosition] = useState<{ x: number; y: number } | null>(null);
   const MAX_VISIBLE_TASKS_IN_TOOLTIP = 5;
@@ -231,6 +265,40 @@ export default function ProjectTimeline({ projectId }: ProjectTimelineProps) {
     }
     return true;
   });
+
+  // 动态初始化 Chart.js
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const initializeChartJS = async () => {
+      try {
+        // 动态导入 Chart.js 及其依赖
+        const chartJSModule = await import("chart.js");
+        const { Chart, CategoryScale, LinearScale, PointElement, Tooltip, Legend, TimeScale } = chartJSModule;
+
+        // 动态导入日期适配器
+        await import("chartjs-adapter-date-fns");
+
+        // 注册 Chart.js 组件和自定义插件
+        Chart.register(
+          CategoryScale,
+          LinearScale,
+          TimeScale,
+          PointElement,
+          Tooltip,
+          Legend,
+          todayLinePlugin,
+          aggregatedPointPlugin
+        );
+
+        setIsChartInitialized(true);
+      } catch (error) {
+        console.error("Failed to initialize Chart.js:", error);
+      }
+    };
+
+    initializeChartJS();
+  }, []);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -337,14 +405,14 @@ export default function ProjectTimeline({ projectId }: ProjectTimelineProps) {
         };
       } else {
         return {
-          label: statusLabels[status as keyof typeof statusLabels],
+          label: getStatusLabel(status as 'todo' | 'in-progress' | 'complete'),
           data: points.map((point) => ({
             x: parseLocalDate((point as TimelineTask).dueDate),
             y: point.y,
             ...point,
           })),
-          backgroundColor: statusColors[status as keyof typeof statusColors],
-          borderColor: statusColors[status as keyof typeof statusColors],
+          backgroundColor: getStatusColor(status as 'todo' | 'in-progress' | 'complete'),
+          borderColor: getStatusColor(status as 'todo' | 'in-progress' | 'complete'),
           pointRadius: 10,
           pointHoverRadius: 14,
         };
@@ -497,18 +565,7 @@ export default function ProjectTimeline({ projectId }: ProjectTimelineProps) {
       {isLoading ? (
         <div className="h-[400px] bg-gray-50 animate-pulse rounded-lg" />
       ) : error ? (
-        <div className="h-[400px] flex items-center justify-center border border-red-200 bg-red-50 rounded-lg">
-          <div className="text-center">
-            <AlertCircle className="w-8 h-8 text-red-500 mx-auto mb-2" />
-            <p className="text-red-700">Failed to load timeline data</p>
-            <button
-              onClick={() => queryClient.refetchQueries({ queryKey: taskKeys.timeline(projectId) })}
-              className="mt-2 px-4 py-2 text-sm bg-red-100 text-red-700 rounded hover:bg-red-200"
-            >
-              Retry
-            </button>
-          </div>
-        </div>
+        <ErrorState onRetry={() => queryClient.refetchQueries({ queryKey: taskKeys.timeline(projectId) })} />
       ) : (
         <div className="space-y-6">
       {/* Timeline chart card */}
@@ -587,7 +644,7 @@ export default function ProjectTimeline({ projectId }: ProjectTimelineProps) {
                               <div key={task.id} className="flex items-center gap-2">
                                 <div
                                   className="w-2 h-2 rounded-full"
-                                  style={{ backgroundColor: statusColors[task.status] }}
+                                  style={{ backgroundColor: getStatusColor(task.status) }}
                                 />
                                 <span className="text-sm text-gray-300 truncate">
                                   {task.title}
@@ -605,7 +662,7 @@ export default function ProjectTimeline({ projectId }: ProjectTimelineProps) {
                                   <div key={task.id} className="flex items-center gap-2">
                                     <div
                                       className="w-2 h-2 rounded-full"
-                                      style={{ backgroundColor: statusColors[task.status] }}
+                                      style={{ backgroundColor: getStatusColor(task.status) }}
                                     />
                                     <span className="text-sm text-gray-300 truncate">
                                       {task.title}
@@ -632,9 +689,9 @@ export default function ProjectTimeline({ projectId }: ProjectTimelineProps) {
                       </p>
                       <p
                         className="text-sm"
-                        style={{ color: statusColors[hoveredPoint.status] }}
+                        style={{ color: getStatusColor(hoveredPoint.status) }}
                       >
-                        {statusLabels[hoveredPoint.status]}
+                        {getStatusLabel(hoveredPoint.status)}
                       </p>
                     </>
                   )}
@@ -642,17 +699,7 @@ export default function ProjectTimeline({ projectId }: ProjectTimelineProps) {
               )}
             </div>
 
-            {tasks.length === 0 && (
-              <div className="h-[180px] flex items-center justify-center">
-                <div className="text-center">
-                  <Calendar className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-                  <p className="text-gray-600">No tasks with due dates</p>
-                  <p className="text-sm text-gray-500 mt-1">
-                    Create tasks and set due dates to see them on the timeline
-                  </p>
-                </div>
-              </div>
-            )}
+            {tasks.length === 0 && <EmptyState />}
 
           </>
         ) : (
