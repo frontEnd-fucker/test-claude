@@ -7,48 +7,6 @@ import { format } from "date-fns";
 import { useTimelineData } from "@/lib/queries/tasks";
 import { taskKeys } from "@/lib/queries/tasks";
 import { cn } from "@/lib/utils";
-
-// 静态组件定义 - 骨架屏
-const ChartSkeleton = () => (
-  <div className="relative h-[180px] bg-gray-50/30 rounded-lg overflow-hidden">
-    {/* 模拟坐标轴 */}
-    <div className="absolute bottom-0 left-0 right-0 h-px bg-gray-300"></div>
-    <div className="absolute left-0 top-0 bottom-0 w-px bg-gray-300"></div>
-
-    {/* 模拟数据点（随机位置） */}
-    {[...Array(8)].map((_, i) => (
-      <div
-        key={i}
-        className="absolute w-3 h-3 rounded-full animate-pulse"
-        style={{
-          left: `${15 + i * 12}%`,
-          top: `${30 + Math.sin(i) * 40}%`,
-          backgroundColor: i % 3 === 0 ? '#ef4444' :
-                          i % 3 === 1 ? '#3b82f6' : '#22c55e',
-          opacity: 0.7,
-        }}
-      />
-    ))}
-
-    {/* 模拟图例 */}
-    <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-4">
-      {['Todo', 'In Progress', 'Complete'].map((label, i) => (
-        <div key={label} className="flex items-center gap-2">
-          <div
-            className="w-3 h-3 rounded-full animate-pulse"
-            style={{
-              backgroundColor: i === 0 ? '#ef4444' :
-                              i === 1 ? '#3b82f6' : '#22c55e',
-            }}
-          />
-          <span className="text-xs text-gray-500">{label}</span>
-        </div>
-      ))}
-    </div>
-  </div>
-);
-
-
 // Chart.js 类型导入（仅用于类型检查）
 import type {
   Chart,
@@ -81,9 +39,9 @@ const ErrorState = ({ onRetry }: { onRetry: () => void }) => (
 const EmptyState = () => (
   <div className="h-[180px] flex items-center justify-center">
     <div className="text-center">
-      <Calendar className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-      <p className="text-gray-600">No tasks with due dates</p>
-      <p className="text-sm text-gray-500 mt-1">
+      <Calendar className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
+      <p className="text-muted-foreground">No tasks with due dates</p>
+      <p className="text-sm text-muted-foreground mt-1">
         Create tasks and set due dates to see them on the timeline
       </p>
     </div>
@@ -268,14 +226,14 @@ interface ScatterComponentProps {
 }
 
 export default function ProjectTimeline({ projectId }: ProjectTimelineProps) {
-  const [isChartInitialized, setIsChartInitialized] = useState(false);
+  const [isChartReady, setIsChartReady] = useState(false);
   const [hoveredPoint, setHoveredPoint] = useState<TimelinePoint | null>(null);
   const [mousePosition, setMousePosition] = useState<{ x: number; y: number } | null>(null);
   const MAX_VISIBLE_TASKS_IN_TOOLTIP = 5;
   const queryClient = useQueryClient();
   const {
     data: timelineData,
-    isLoading,
+    isLoading: isDataLoading,
     error,
   } = useTimelineData(projectId);
 
@@ -328,7 +286,7 @@ export default function ProjectTimeline({ projectId }: ProjectTimelineProps) {
         const Scatter = scatterModule.Scatter;
 
         setScatterComponent(() => Scatter);
-        setIsChartInitialized(true);
+        setIsChartReady(true);
       } catch (error) {
         console.error("Failed to initialize chart libraries:", error);
       }
@@ -336,6 +294,9 @@ export default function ProjectTimeline({ projectId }: ProjectTimelineProps) {
 
     initializeChart();
   }, []);
+
+  // 统一的 ready 状态：同时等待库加载 + 数据加载完成
+  const isReady = isChartReady && !isDataLoading;
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -599,9 +560,7 @@ export default function ProjectTimeline({ projectId }: ProjectTimelineProps) {
 
   return (
     <>
-      {isLoading ? (
-        <div className="h-[400px] bg-gray-50 animate-pulse rounded-lg" />
-      ) : error ? (
+      {error ? (
         <ErrorState onRetry={() => queryClient.refetchQueries({ queryKey: taskKeys.timeline(projectId) })} />
       ) : (
         <div className="space-y-6">
@@ -643,34 +602,33 @@ export default function ProjectTimeline({ projectId }: ProjectTimelineProps) {
         </div>
 
         {isExpanded ? (
-          // 展开状态
+          // 展开状态 - 单一骨架屏：同时等待库加载 + 数据加载
           <>
             <div className="relative h-[180px]">
-              {ScatterComponent && isChartInitialized ? (
-                <ScatterComponent data={{ datasets: chartData.datasets }} options={options} />
+              {!isReady ? (
+                // 单一骨架屏
+                <div className="h-full bg-muted animate-pulse rounded-lg" />
+              ) : tasks.length === 0 ? (
+                <EmptyState />
               ) : (
-                <ChartSkeleton />
+                <ScatterComponent data={{ datasets: chartData.datasets }} options={options} />
               )}
 
               {/* Custom hover tooltip */}
               {hoveredPoint && mousePosition && (
                 <div
-                  className="absolute bg-gray-800 border border-gray-700 rounded-lg p-3 shadow-lg z-10"
+                  className="absolute bg-card border border-border rounded-lg p-3 shadow-lg z-10 max-w-xs max-h-60 overflow-hidden"
                   style={{
-                    backgroundColor: "#1f2937",
                     left: `${mousePosition.x}px`,
                     top: `${mousePosition.y}px`,
-                    maxWidth: "320px",
-                    maxHeight: "240px",
-                    overflow: "hidden",
                   }}
                 >
                   {isAggregatedPoint(hoveredPoint) ? (
                     <>
-                      <p className="font-medium text-white">
+                      <p className="font-medium text-card-foreground">
                         📊 {hoveredPoint.count} more tasks
                       </p>
-                      <p className="text-sm text-gray-400">
+                      <p className="text-sm text-muted-foreground">
                         {formatDate(hoveredPoint.date)}
                       </p>
                       <div className="mt-2 space-y-1 overflow-y-auto" style={{ maxHeight: "160px" }}>
@@ -687,7 +645,7 @@ export default function ProjectTimeline({ projectId }: ProjectTimelineProps) {
                                   className="w-2 h-2 rounded-full"
                                   style={{ backgroundColor: getStatusColor(task.status) }}
                                 />
-                                <span className="text-sm text-gray-300 truncate">
+                                <span className="text-sm text-card-foreground truncate">
                                   {task.title}
                                 </span>
                               </div>
@@ -705,14 +663,14 @@ export default function ProjectTimeline({ projectId }: ProjectTimelineProps) {
                                       className="w-2 h-2 rounded-full"
                                       style={{ backgroundColor: getStatusColor(task.status) }}
                                     />
-                                    <span className="text-sm text-gray-300 truncate">
+                                    <span className="text-sm text-card-foreground truncate">
                                       {task.title}
                                     </span>
                                   </div>
                                 ))}
                                 <div className="flex items-center gap-2 pt-1 border-t border-gray-700 mt-1">
                                   <div className="w-2 h-2 rounded-full bg-gray-600" />
-                                  <span className="text-sm text-gray-400 italic">
+                                  <span className="text-sm text-muted-foreground italic">
                                     {remainingCount} more tasks not shown...
                                   </span>
                                 </div>
@@ -725,7 +683,7 @@ export default function ProjectTimeline({ projectId }: ProjectTimelineProps) {
                   ) : (
                     <>
                       <p className="font-medium text-white">{hoveredPoint.title}</p>
-                      <p className="text-sm text-gray-400">
+                      <p className="text-sm text-muted-foreground">
                         {formatDate(hoveredPoint.dueDate)}
                       </p>
                       <p
@@ -739,8 +697,6 @@ export default function ProjectTimeline({ projectId }: ProjectTimelineProps) {
                 </div>
               )}
             </div>
-
-            {tasks.length === 0 && <EmptyState />}
 
           </>
         ) : (
