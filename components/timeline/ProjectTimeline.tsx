@@ -9,6 +9,9 @@ import {
   Tooltip,
   Legend,
   TimeScale,
+  type Chart,
+  type ChartEvent,
+  type ActiveElement,
 } from "chart.js";
 import "chartjs-adapter-date-fns";
 import { useMemo, useState, useEffect } from "react";
@@ -31,7 +34,7 @@ ChartJS.register(
 // 自定义 plugin：绘制当前时间的垂直线
 const todayLinePlugin = {
   id: "todayLine",
-  afterDraw: (chart: any) => {
+  afterDraw: (chart: Chart) => {
     const ctx = chart.ctx;
     const xAxis = chart.scales.x;
     const yAxis = chart.scales.y;
@@ -60,9 +63,21 @@ const todayLinePlugin = {
 };
 
 // 自定义 plugin：绘制聚合点（圆形中间有三小圆点）
+interface AggregatedPointPluginArgs {
+  meta: {
+    data: Array<{
+      getProps(keys: string[]): { x: number; y: number };
+      options: { radius?: number };
+    }>;
+  };
+  index: number;
+}
+
+type PointElementType = AggregatedPointPluginArgs['meta']['data'][0];
+
 const aggregatedPointPlugin = {
   id: "aggregatedPoint",
-  afterDatasetDraw: (chart: any, args: any, options: any) => {
+  afterDatasetDraw: (chart: Chart, args: AggregatedPointPluginArgs, _options: unknown) => { // eslint-disable-line @typescript-eslint/no-unused-vars
     const ctx = chart.ctx;
     const meta = args.meta;
     const dataset = chart.data.datasets[args.index];
@@ -70,8 +85,8 @@ const aggregatedPointPlugin = {
     // 只处理空标签的数据集（聚合点）
     if (dataset.label !== "") return;
 
-    meta.data.forEach((pointElement: any, index: number) => {
-      const rawData = dataset.data[index];
+    meta.data.forEach((pointElement: PointElementType, index: number) => {
+      const rawData = dataset.data[index] as CustomChartDataPoint;
       if (!rawData || rawData.type !== "aggregated") return;
 
       const { x, y } = pointElement.getProps(['x', 'y']);
@@ -144,6 +159,25 @@ interface ProjectTimelineProps {
 
 type TimelinePoint = TimelineTask | AggregatedPoint;
 
+// Type guard
+function isAggregatedPoint(point: TimelinePoint): point is AggregatedPoint {
+  return (point as AggregatedPoint).type === "aggregated";
+}
+
+// Custom Chart.js data point type
+interface CustomChartDataPoint {
+  x: number;
+  y: number;
+  type?: "aggregated";
+  date?: string;
+  count?: number;
+  tasks?: TimelineTask[];
+  id?: string;
+  title?: string;
+  dueDate?: string;
+  status?: "todo" | "in-progress" | "complete";
+}
+
 // 解析日期字符串为本地时间戳
 const parseLocalDate = (dateStr: string): number => {
   const [year, month, day] = dateStr.split("-").map(Number);
@@ -181,28 +215,33 @@ export default function ProjectTimeline({ projectId }: ProjectTimelineProps) {
     error,
   } = useTimelineData(projectId);
 
-  const tasks = timelineData?.timelineTasks || [];
-  const noDueDateTasks = timelineData?.noDueDateTasks || [];
+  const tasks = useMemo(() => timelineData?.timelineTasks || [], [timelineData]);
+  const noDueDateTasks = useMemo(() => timelineData?.noDueDateTasks || [], [timelineData]);
   const totalTasks = tasks.length + noDueDateTasks.length;
 
   // Expand/collapse state with localStorage persistence
   const [isExpanded, setIsExpanded] = useState(() => {
     if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('timeline-expanded');
-      return saved === null ? true : saved === 'true'; // 默认展开
+      try {
+        const saved = localStorage.getItem('timeline-expanded');
+        return saved === null ? true : saved === 'true'; // 默认展开
+      } catch {
+        return true; // 如果localStorage不可用，默认展开
+      }
     }
     return true;
   });
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      localStorage.setItem('timeline-expanded', isExpanded.toString());
+      try {
+        localStorage.setItem('timeline-expanded', isExpanded.toString());
+      } catch {
+        // 忽略localStorage错误
+      }
     }
   }, [isExpanded]);
 
-  // Task statistics
-  const completedCount = tasks.filter(t => t.status === 'complete').length;
-  const inProgressCount = tasks.filter(t => t.status === 'in-progress').length;
 
   const chartData = useMemo(() => {
     const MAX_VISIBLE_PER_DAY = 6; // 每天最多显示6个点，第6个是聚合点
@@ -264,7 +303,7 @@ export default function ProjectTimeline({ projectId }: ProjectTimelineProps) {
     // 按状态分组普通任务点，聚合点单独一组
     const groupedByStatus = pointsToShow.reduce(
       (acc, point) => {
-        if (point.type === "aggregated") {
+        if (isAggregatedPoint(point)) {
           if (!acc.aggregated) {
             acc.aggregated = [];
           }
@@ -313,7 +352,7 @@ export default function ProjectTimeline({ projectId }: ProjectTimelineProps) {
     });
 
     // 计算最大 y 值
-    const maxY = pointsToShow.reduce((max, point) => Math.max(max, point.y), 0);
+    const maxY = pointsToShow.reduce((max, point) => Math.max(max, point.y || 0), 0);
 
     return { datasets, maxY, pointsToShow };
   }, [tasks]);
@@ -355,8 +394,8 @@ export default function ProjectTimeline({ projectId }: ProjectTimelineProps) {
           type: "time" as const,
           position: "bottom" as const,
           time: {
-            unit: "day",
-            round: "day",
+            unit: "day" as const,
+            round: "day" as const,
             displayFormats: {
               day: "MMM d",
             },
@@ -365,9 +404,10 @@ export default function ProjectTimeline({ projectId }: ProjectTimelineProps) {
           max: maxDate,
           ticks: {
             color: "#9ca3af",
-            callback: (value) => {
+            callback: (tickValue: string | number) => {
               // 使用本地时间转换日期
-              const date = new Date(value);
+              const numericValue = typeof tickValue === 'string' ? parseFloat(tickValue) : tickValue;
+              const date = new Date(numericValue);
               const year = date.getFullYear();
               const month = date.getMonth() + 1;
               const day = date.getDate();
@@ -400,17 +440,21 @@ export default function ProjectTimeline({ projectId }: ProjectTimelineProps) {
           enabled: false, // 禁用 Chart.js 原生 tooltip，使用自定义悬停面板
         },
       },
-      onHover: (event: any, elements: any) => {
+      onHover: (event: ChartEvent, elements: ActiveElement[]) => {
         if (elements.length > 0) {
-          const point = elements[0].element.$context?.raw as TimelinePoint;
+          // Chart.js内部属性访问需要类型断言
+          const elementWithContext = elements[0] as ActiveElement & { element: { $context?: { raw: TimelinePoint } } };
+          const point = elementWithContext.element.$context?.raw;
           if (point) {
             // 获取鼠标位置
-            if (event.native) {
-              const rect = event.native.target.getBoundingClientRect();
+            const nativeEvent = (event as ChartEvent & { native: MouseEvent }).native;
+            if (nativeEvent) {
+              const target = nativeEvent.target as HTMLElement;
+              const rect = target.getBoundingClientRect();
               const containerWidth = rect.width;
               const containerHeight = rect.height;
-              const mouseX = event.native.clientX - rect.left;
-              const mouseY = event.native.clientY - rect.top;
+              const mouseX = nativeEvent.clientX - rect.left;
+              const mouseY = nativeEvent.clientY - rect.top;
 
               // 面板尺寸估计
               const panelWidth = 320;
@@ -523,17 +567,17 @@ export default function ProjectTimeline({ projectId }: ProjectTimelineProps) {
                     overflow: "hidden",
                   }}
                 >
-                  {hoveredPoint.type === "aggregated" ? (
+                  {isAggregatedPoint(hoveredPoint) ? (
                     <>
                       <p className="font-medium text-white">
-                        📊 {(hoveredPoint as AggregatedPoint).count} more tasks
+                        📊 {hoveredPoint.count} more tasks
                       </p>
                       <p className="text-sm text-gray-400">
-                        {formatDate((hoveredPoint as AggregatedPoint).date)}
+                        {formatDate(hoveredPoint.date)}
                       </p>
                       <div className="mt-2 space-y-1 overflow-y-auto" style={{ maxHeight: "160px" }}>
                         {(() => {
-                          const aggregated = hoveredPoint as AggregatedPoint;
+                          const aggregated = hoveredPoint;
                           const allTasks = aggregated.tasks;
                           const totalTasks = allTasks.length;
 
@@ -582,15 +626,15 @@ export default function ProjectTimeline({ projectId }: ProjectTimelineProps) {
                     </>
                   ) : (
                     <>
-                      <p className="font-medium text-white">{(hoveredPoint as TimelineTask).title}</p>
+                      <p className="font-medium text-white">{hoveredPoint.title}</p>
                       <p className="text-sm text-gray-400">
-                        {formatDate((hoveredPoint as TimelineTask).dueDate)}
+                        {formatDate(hoveredPoint.dueDate)}
                       </p>
                       <p
                         className="text-sm"
-                        style={{ color: statusColors[(hoveredPoint as TimelineTask).status] }}
+                        style={{ color: statusColors[hoveredPoint.status] }}
                       >
-                        {statusLabels[(hoveredPoint as TimelineTask).status]}
+                        {statusLabels[hoveredPoint.status]}
                       </p>
                     </>
                   )}
