@@ -1,6 +1,5 @@
 "use client";
 
-import dynamic from "next/dynamic";
 import { useMemo, useState, useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { AlertCircle, Calendar, ChevronUp, ChevronDown } from "lucide-react";
@@ -9,21 +8,46 @@ import { useTimelineData } from "@/lib/queries/tasks";
 import { taskKeys } from "@/lib/queries/tasks";
 import { cn } from "@/lib/utils";
 
-// 静态组件定义
-const ChartLoadingState = () => (
-  <div className="h-[180px] flex items-center justify-center text-gray-500">
-    Loading chart...
+// 静态组件定义 - 骨架屏
+const ChartSkeleton = () => (
+  <div className="relative h-[180px] bg-gray-50/30 rounded-lg overflow-hidden">
+    {/* 模拟坐标轴 */}
+    <div className="absolute bottom-0 left-0 right-0 h-px bg-gray-300"></div>
+    <div className="absolute left-0 top-0 bottom-0 w-px bg-gray-300"></div>
+
+    {/* 模拟数据点（随机位置） */}
+    {[...Array(8)].map((_, i) => (
+      <div
+        key={i}
+        className="absolute w-3 h-3 rounded-full animate-pulse"
+        style={{
+          left: `${15 + i * 12}%`,
+          top: `${30 + Math.sin(i) * 40}%`,
+          backgroundColor: i % 3 === 0 ? '#ef4444' :
+                          i % 3 === 1 ? '#3b82f6' : '#22c55e',
+          opacity: 0.7,
+        }}
+      />
+    ))}
+
+    {/* 模拟图例 */}
+    <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-4">
+      {['Todo', 'In Progress', 'Complete'].map((label, i) => (
+        <div key={label} className="flex items-center gap-2">
+          <div
+            className="w-3 h-3 rounded-full animate-pulse"
+            style={{
+              backgroundColor: i === 0 ? '#ef4444' :
+                              i === 1 ? '#3b82f6' : '#22c55e',
+            }}
+          />
+          <span className="text-xs text-gray-500">{label}</span>
+        </div>
+      ))}
+    </div>
   </div>
 );
 
-// 动态导入图表库以减少初始包大小
-const Scatter = dynamic(
-  () => import("react-chartjs-2").then((mod) => mod.Scatter),
-  {
-    ssr: false,
-    loading: ChartLoadingState,
-  }
-);
 
 // Chart.js 类型导入（仅用于类型检查）
 import type {
@@ -237,6 +261,12 @@ const getStatusColor = (status: 'todo' | 'in-progress' | 'complete'): string =>
 const getStatusLabel = (status: 'todo' | 'in-progress' | 'complete'): string =>
   statusLabelsMap.get(status) || 'Unknown';
 
+// Scatter 组件 props 类型
+interface ScatterComponentProps {
+  data: { datasets: unknown[] };
+  options: unknown;
+}
+
 export default function ProjectTimeline({ projectId }: ProjectTimelineProps) {
   const [isChartInitialized, setIsChartInitialized] = useState(false);
   const [hoveredPoint, setHoveredPoint] = useState<TimelinePoint | null>(null);
@@ -266,20 +296,22 @@ export default function ProjectTimeline({ projectId }: ProjectTimelineProps) {
     return true;
   });
 
-  // 动态初始化 Chart.js
+  const [ScatterComponent, setScatterComponent] = useState<React.ComponentType<any> | null>(null); // eslint-disable-line @typescript-eslint/no-explicit-any
+
+  // 动态初始化图表库和 Chart.js
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
-    const initializeChartJS = async () => {
+    const initializeChart = async () => {
       try {
-        // 动态导入 Chart.js 及其依赖
+        // 1. 动态导入 Chart.js 及其依赖
         const chartJSModule = await import("chart.js");
         const { Chart, CategoryScale, LinearScale, PointElement, Tooltip, Legend, TimeScale } = chartJSModule;
 
-        // 动态导入日期适配器
+        // 2. 动态导入日期适配器
         await import("chartjs-adapter-date-fns");
 
-        // 注册 Chart.js 组件和自定义插件
+        // 3. 注册 Chart.js 组件和自定义插件
         Chart.register(
           CategoryScale,
           LinearScale,
@@ -291,13 +323,18 @@ export default function ProjectTimeline({ projectId }: ProjectTimelineProps) {
           aggregatedPointPlugin
         );
 
+        // 4. 动态导入 react-chartjs-2 的 Scatter 组件
+        const scatterModule = await import("react-chartjs-2");
+        const Scatter = scatterModule.Scatter;
+
+        setScatterComponent(() => Scatter);
         setIsChartInitialized(true);
       } catch (error) {
-        console.error("Failed to initialize Chart.js:", error);
+        console.error("Failed to initialize chart libraries:", error);
       }
     };
 
-    initializeChartJS();
+    initializeChart();
   }, []);
 
   useEffect(() => {
@@ -609,7 +646,11 @@ export default function ProjectTimeline({ projectId }: ProjectTimelineProps) {
           // 展开状态
           <>
             <div className="relative h-[180px]">
-              <Scatter data={{ datasets: chartData.datasets }} options={options} />
+              {ScatterComponent && isChartInitialized ? (
+                <ScatterComponent data={{ datasets: chartData.datasets }} options={options} />
+              ) : (
+                <ChartSkeleton />
+              )}
 
               {/* Custom hover tooltip */}
               {hoveredPoint && mousePosition && (
