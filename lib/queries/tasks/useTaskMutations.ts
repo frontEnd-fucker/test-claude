@@ -309,6 +309,7 @@ export function useCreateTasksBatch() {
       priority?: PriorityLevel
       status?: TaskStatus
       projectId?: string
+      dueDate?: string | null
     }>) => createTasksBatch(
       tasks.map(t => ({
         ...t,
@@ -334,6 +335,7 @@ export function useCreateTasksBatch() {
         position: index + 1,
         userId: 'temp-user',
         projectId: task.projectId ?? routeProjectId ?? '',
+        dueDate: task.dueDate ? new Date(task.dueDate) : undefined,
         createdAt: new Date(),
         updatedAt: new Date(),
       }))

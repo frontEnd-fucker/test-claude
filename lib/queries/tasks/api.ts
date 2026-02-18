@@ -401,6 +401,7 @@ export async function createTasksBatch(
     priority?: PriorityLevel
     status?: TaskStatus
     projectId?: string
+    dueDate?: string | null
   }>
 ): Promise<Task[]> {
   const supabase = createClient()
@@ -434,6 +435,7 @@ export async function createTasksBatch(
     position: startPosition + index + 1,
     project_id: task.projectId || null,
     user_id: user.id,
+    due_date: task.dueDate || null,
   }))
 
   // Batch insert
