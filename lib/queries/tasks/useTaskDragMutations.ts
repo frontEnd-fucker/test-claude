@@ -168,6 +168,19 @@ export function useMoveTaskBetweenColumns() {
     },
     onSuccess: () => {
       // Success toast is shown
+      // Invalidate timeline query when task status changes
+      // Timeline data includes task status and needs to be refreshed
+      queryClient.invalidateQueries({
+        predicate: (query) => {
+          const queryKey = query.queryKey
+          // Check if this is a timeline query (contains 'timeline' in the key)
+          return (
+            Array.isArray(queryKey) &&
+            queryKey.includes('tasks') &&
+            queryKey.includes('timeline')
+          )
+        }
+      })
     },
     onError: (err, variables, context) => {
       // Only rollback and show error for the latest optimistic update

@@ -1,6 +1,7 @@
 export { taskKeys } from './query-keys'
 export * from './api'
 export * from './useTasks'
+export * from './useTimelineData'
 export * from './useTaskDetail'
 export * from './useTaskMutations'
 export * from './useTaskDragMutations'

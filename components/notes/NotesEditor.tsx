@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useLayoutEffect } from 'react'
+import { useState } from 'react'
 import { useParams } from 'next/navigation'
 import { useNotesStore } from '@/lib/store'
 import { useNotes, useCreateNote, useUpdateNote, useDeleteNote, useNoteSubscriptions } from '@/lib/queries/notes'
@@ -9,13 +9,13 @@ import { Textarea } from '@/components/ui/textarea'
 import { Card } from '@/components/ui/card'
 import { Save, Trash2, Plus, FileText, Loader2, AlertCircle } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { Skeleton, MinimalSkeleton } from '@/components/ui/skeleton/index'
+import { MinimalSkeleton } from '@/components/ui/skeleton/index'
 
-export default function NotesEditor() {
+function NotesEditorContent() {
   const params = useParams()
   const { activeNoteId, setActiveNote } = useNotesStore()
+  const [isEditing, setIsEditing] = useState(true)
   const [content, setContent] = useState('')
-  const [isEditing, setIsEditing] = useState(false)
 
   // Set up real-time subscriptions
   useNoteSubscriptions()
@@ -31,29 +31,23 @@ export default function NotesEditor() {
     ? notes.find((note) => note.id === activeNoteId)
     : undefined
 
-  // eslint-disable-next-line react-compiler/react-compiler
-  useLayoutEffect(() => {
-    if (activeNote) {
-      setContent(activeNote.content)
-      setIsEditing(false)
-    } else {
-      setContent('')
-      setIsEditing(true)
-    }
-  }, [activeNote])
+  // 当 activeNote 变化时，使用 lazy 初始化更新 content
+  // 注意：这只在组件首次渲染时执行，之后由 setContent 处理
+  const contentValue = activeNote ? activeNote.content : content
 
   const handleSave = () => {
-    if (!content.trim()) return
+    const contentToSave = activeNote ? content : contentValue
+    if (!contentToSave.trim()) return
 
     if (activeNote) {
       // Update existing note - keep existing title
-      updateNoteMutation.mutate({ id: activeNote.id, updates: { content } })
+      updateNoteMutation.mutate({ id: activeNote.id, updates: { content: contentToSave } })
     } else {
       // Create new note - generate title from first line
-      const firstLine = content.split('\n')[0].trim()
+      const firstLine = contentToSave.split('\n')[0].trim()
       const title = firstLine.length > 0 ? firstLine.substring(0, 50) : 'Untitled Note'
       createNoteMutation.mutate(
-        { title, content },
+        { title, content: contentToSave },
         {
           onSuccess: (newNote) => {
             setActiveNote(newNote.id)
@@ -77,7 +71,7 @@ export default function NotesEditor() {
   }
 
   if (isLoading && notes.length === 0) {
-    return <MinimalSkeleton className="h-64 w-full" />;
+    return <MinimalSkeleton className="h-64 w-full" />
   }
 
   if (error) {
@@ -123,7 +117,7 @@ export default function NotesEditor() {
           {isEditing ? (
             <div className="space-y-3">
               <Textarea
-                value={content}
+                value={contentValue}
                 onChange={(e) => setContent(e.target.value)}
                 placeholder="Start typing your note..."
                 className="min-h-[200px] font-mono text-sm bg-amber-50/50 border-amber-200 focus-visible:bg-amber-50"
@@ -176,7 +170,11 @@ export default function NotesEditor() {
                     ? 'bg-amber-100/60 border-amber-300'
                     : 'bg-amber-50/40 border-amber-100 hover:bg-amber-100/60'
                 )}
-                onClick={() => setActiveNote(note.id)}
+                onClick={() => {
+                  setContent(note.content)
+                  setActiveNote(note.id)
+                  setIsEditing(false)
+                }}
               >
                 <div className="flex items-center justify-between">
                   <FileText className="h-3.5 w-3.5 text-amber-600/70" />
@@ -198,4 +196,11 @@ export default function NotesEditor() {
       </div>
     </div>
   )
+}
+
+export default function NotesEditor() {
+  const { activeNoteId } = useNotesStore()
+
+  // 使用 key 强制在切换笔记时重新挂载组件
+  return <NotesEditorContent key={activeNoteId ?? 'new'} />
 }

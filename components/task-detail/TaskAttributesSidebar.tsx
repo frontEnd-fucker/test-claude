@@ -21,7 +21,7 @@ interface TaskAttributesSidebarProps {
 export default function TaskAttributesSidebar({ task, projectId }: TaskAttributesSidebarProps) {
   const updateTaskMutation = useUpdateTask()
   const [dueDate, setDueDate] = useState(
-    task.dueDate ? task.dueDate.toISOString().split('T')[0] : ''
+    task.dueDate ? task.dueDate.toLocaleDateString('en-CA') : ''
   )
 
   // Local state for immediate UI feedback

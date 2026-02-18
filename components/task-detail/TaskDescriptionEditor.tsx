@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef } from 'react'
 import { Task } from '@/types'
 import { useUpdateTask } from '@/lib/queries/tasks'
 import { Textarea } from '@/components/ui/textarea'
@@ -13,14 +13,11 @@ interface TaskDescriptionEditorProps {
 
 export default function TaskDescriptionEditor({ task }: TaskDescriptionEditorProps) {
   const updateTaskMutation = useUpdateTask()
-  const [description, setDescription] = useState(task.description || '')
+
+  // 使用懒初始化，当 task 变化时自动设置初始值
+  const [description, setDescription] = useState(() => task.description ?? '')
   const [isEditing, setIsEditing] = useState(false)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
-
-  // Update local state when task changes
-  useEffect(() => {
-    setDescription(task.description || '')
-  }, [task.description])
 
   const handleSave = () => {
     if (description !== task.description) {

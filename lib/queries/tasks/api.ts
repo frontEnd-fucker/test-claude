@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/client'
-import { Task, TaskStatus, PriorityLevel } from '@/types/database'
+import { Task, TaskStatus, PriorityLevel, TimelineData, TimelineTask, NoDueDateTask } from '@/types/database'
 
 /**
  * Fetch tasks for the current user
@@ -84,6 +84,15 @@ export async function fetchTask(id: string): Promise<Task> {
 }
 
 /**
+ * Validate that a date string or Date object is valid
+ */
+function isValidDate(date: Date | string | undefined): boolean {
+  if (!date) return true // undefined is valid (means no date)
+  const d = typeof date === 'string' ? new Date(date) : date
+  return d instanceof Date && !isNaN(d.getTime())
+}
+
+/**
  * Create a new task
  */
 export async function createTask(
@@ -91,13 +100,19 @@ export async function createTask(
   description?: string,
   priority?: PriorityLevel,
   status: TaskStatus = 'todo',
-  projectId?: string
+  projectId?: string,
+  dueDate?: Date
 ): Promise<Task> {
   const supabase = createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
   if (!user) {
     throw new Error('User not authenticated')
+  }
+
+  // Validate dueDate if provided
+  if (dueDate !== undefined && !isValidDate(dueDate)) {
+    throw new Error('Invalid due date')
   }
 
   // Get max position for the status column
@@ -122,6 +137,7 @@ export async function createTask(
       position,
       project_id: projectId,
       user_id: user.id,
+      due_date: dueDate ? dueDate.toISOString() : null,
     })
     .select()
     .single()
@@ -154,6 +170,11 @@ export async function updateTask(
 ): Promise<Task> {
   console.log('updateTask API called:', { id, updates })
   const supabase = createClient()
+
+  // Validate dueDate if provided
+  if ('dueDate' in updates && updates.dueDate !== undefined && !isValidDate(updates.dueDate)) {
+    throw new Error('Invalid due date')
+  }
 
   // Convert camelCase to snake_case for database fields
   const dbUpdates: Record<string, unknown> = {}
@@ -438,4 +459,43 @@ export async function createTasksBatch(
     createdAt: new Date(task.created_at),
     updatedAt: new Date(task.updated_at),
   })) as Task[]
+}
+
+/**
+ * Fetch timeline data for the current user
+ */
+export async function fetchTimelineData(projectId?: string): Promise<TimelineData> {
+  const tasks = await fetchTasks(projectId);
+
+  // Separate tasks with and without due dates
+  const timelineTasks: TimelineTask[] = [];
+  const noDueDateTasks: NoDueDateTask[] = [];
+
+  tasks.forEach(task => {
+    if (task.dueDate !== undefined) {
+      const dueDate = task.dueDate;
+      const year = dueDate.getFullYear();
+      const month = String(dueDate.getMonth() + 1).padStart(2, '0');
+      const day = String(dueDate.getDate()).padStart(2, '0');
+
+      timelineTasks.push({
+        id: task.id,
+        title: task.title,
+        dueDate: `${year}-${month}-${day}`,
+        status: task.status,
+      });
+    } else {
+      noDueDateTasks.push({
+        id: task.id,
+        title: task.title,
+        status: task.status,
+        createdAt: task.createdAt,
+      });
+    }
+  });
+
+  return {
+    timelineTasks,
+    noDueDateTasks,
+  };
 }

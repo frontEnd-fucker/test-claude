@@ -5,4 +5,5 @@ export const taskKeys = {
     [...taskKeys.lists(), { filters }] as const,
   details: () => [...taskKeys.all, 'detail'] as const,
   detail: (id: string) => [...taskKeys.details(), id] as const,
+  timeline: (projectId?: string) => [...taskKeys.all, 'timeline', { projectId }] as const,
 }

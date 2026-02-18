@@ -19,12 +19,14 @@ export function useCreateTask() {
       priority?: PriorityLevel
       status?: TaskStatus
       projectId?: string
+      dueDate?: Date
     }) => createTask(
       params.title,
       params.description,
       params.priority,
       params.status,
-      params.projectId ?? routeProjectId
+      params.projectId ?? routeProjectId,
+      params.dueDate
     ),
     onMutate: async (params) => {
       // Cancel any outgoing refetches
@@ -43,6 +45,7 @@ export function useCreateTask() {
         status: (params.status || 'todo') as TaskStatus,
         priority: params.priority as PriorityLevel,
         position: 1, // Will be adjusted by server
+        dueDate: params.dueDate,
         userId: 'temp-user',
         projectId: params.projectId ?? routeProjectId ?? '',
         createdAt: new Date(),
@@ -118,6 +121,8 @@ export function useCreateTask() {
           }
         })
       }
+
+      toast.success('Task created successfully')
     },
     onSettled: () => {
       // Always refetch after error or success
@@ -205,9 +210,27 @@ export function useUpdateTask() {
         // Detail queries already handled above
       })
 
-      // Only show success toast for assignee changes to avoid too many notifications
+      // Invalidate timeline query when due date or status is updated
+      // Timeline data is derived data that needs to be recalculated
+      if ('dueDate' in variables.updates || 'status' in variables.updates) {
+        queryClient.invalidateQueries({
+          predicate: (query) => {
+            const queryKey = query.queryKey
+            // Check if this is a timeline query (contains 'timeline' in the key)
+            return (
+              Array.isArray(queryKey) &&
+              queryKey.includes('tasks') &&
+              queryKey.includes('timeline')
+            )
+          }
+        })
+      }
+
+      // Show success toast for task updates
       if ('assigneeId' in variables.updates) {
         toast.success('Task assigned successfully')
+      } else {
+        toast.success('Task updated successfully')
       }
     },
     onSettled: (data, error, variables) => {
