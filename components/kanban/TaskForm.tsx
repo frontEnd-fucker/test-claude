@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useCreateTask, useUpdateTask } from '@/lib/queries/tasks'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -44,22 +44,14 @@ export default function TaskForm({
   const [internalOpen, setInternalOpen] = useState(false)
   const open = externalOpen !== undefined ? externalOpen : internalOpen
   const setOpen = externalOnOpenChange || setInternalOpen
-  const [title, setTitle] = useState(task?.title || '')
-  const [description, setDescription] = useState(task?.description || '')
-  const [priority, setPriority] = useState<'low' | 'medium' | 'high'>(task?.priority || 'medium')
-  const [dueDate, setDueDate] = useState(task?.dueDate ? task.dueDate.toLocaleDateString('en-CA') : '')
+
+  // 使用懒初始化函数，当 task 变化时自动设置初始值
+  const [title, setTitle] = useState(() => task?.title ?? '')
+  const [description, setDescription] = useState(() => task?.description ?? '')
+  const [priority, setPriority] = useState<'low' | 'medium' | 'high'>(() => task?.priority ?? 'medium')
+  const [dueDate, setDueDate] = useState(() => task?.dueDate ? task.dueDate.toLocaleDateString('en-CA') : '')
   const createTaskMutation = useCreateTask()
   const updateTaskMutation = useUpdateTask()
-
-  // Sync form data when task changes
-  useEffect(() => {
-    if (task) {
-      setTitle(task.title)
-      setDescription(task.description || '')
-      setPriority(task.priority || 'medium')
-      setDueDate(task.dueDate ? task.dueDate.toLocaleDateString('en-CA') : '')
-    }
-  }, [task])
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()

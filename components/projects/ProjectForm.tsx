@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useCreateProject, useUpdateProject } from '@/lib/queries/projects'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -35,18 +35,12 @@ export default function ProjectForm({
   const [internalOpen, setInternalOpen] = useState(false)
   const open = externalOpen !== undefined ? externalOpen : internalOpen
   const setOpen = externalOnOpenChange || setInternalOpen
-  const [name, setName] = useState(project?.name || '')
-  const [description, setDescription] = useState(project?.description || '')
+
+  // 使用懒初始化，当 project 变化时自动设置初始值
+  const [name, setName] = useState(() => project?.name ?? '')
+  const [description, setDescription] = useState(() => project?.description ?? '')
   const createProjectMutation = useCreateProject()
   const updateProjectMutation = useUpdateProject()
-
-  // Sync form data when project changes
-  useEffect(() => {
-    if (project) {
-      setName(project.name)
-      setDescription(project.description || '')
-    }
-  }, [project])
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()

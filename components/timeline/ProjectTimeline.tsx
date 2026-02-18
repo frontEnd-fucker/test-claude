@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useEffect } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { AlertCircle, Calendar, ChevronUp, ChevronDown } from "lucide-react";
 import { format } from "date-fns";
@@ -219,11 +219,9 @@ const getStatusColor = (status: 'todo' | 'in-progress' | 'complete'): string =>
 const getStatusLabel = (status: 'todo' | 'in-progress' | 'complete'): string =>
   statusLabelsMap.get(status) || 'Unknown';
 
-// Scatter 组件 props 类型
-interface ScatterComponentProps {
-  data: { datasets: unknown[] };
-  options: unknown;
-}
+// Scatter 组件类型定义 - 使用 React.ElementType 以支持动态组件渲染
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type ScatterComponentType = React.ElementType<any>;
 
 export default function ProjectTimeline({ projectId }: ProjectTimelineProps) {
   const [isChartReady, setIsChartReady] = useState(false);
@@ -254,7 +252,7 @@ export default function ProjectTimeline({ projectId }: ProjectTimelineProps) {
     return true;
   });
 
-  const [ScatterComponent, setScatterComponent] = useState<React.ComponentType<any> | null>(null); // eslint-disable-line @typescript-eslint/no-explicit-any
+  const [ScatterComponent, setScatterComponent] = useState<ScatterComponentType | null>(null);
 
   // 动态初始化图表库和 Chart.js
   useEffect(() => {
@@ -285,7 +283,8 @@ export default function ProjectTimeline({ projectId }: ProjectTimelineProps) {
         const scatterModule = await import("react-chartjs-2");
         const Scatter = scatterModule.Scatter;
 
-        setScatterComponent(() => Scatter);
+        // 使用类型断言来绕过 react-chartjs-2 的复杂类型定义
+        setScatterComponent(() => Scatter as ScatterComponentType);
         setIsChartReady(true);
       } catch (error) {
         console.error("Failed to initialize chart libraries:", error);
@@ -611,7 +610,9 @@ export default function ProjectTimeline({ projectId }: ProjectTimelineProps) {
               ) : tasks.length === 0 ? (
                 <EmptyState />
               ) : (
-                <ScatterComponent data={{ datasets: chartData.datasets }} options={options} />
+                // 使用类型断言绕过 react-chartjs-2 的复杂类型定义
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                React.createElement(ScatterComponent as any, { data: { datasets: chartData.datasets }, options })
               )}
 
               {/* Custom hover tooltip */}

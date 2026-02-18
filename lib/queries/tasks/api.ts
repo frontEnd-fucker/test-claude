@@ -84,6 +84,15 @@ export async function fetchTask(id: string): Promise<Task> {
 }
 
 /**
+ * Validate that a date string or Date object is valid
+ */
+function isValidDate(date: Date | string | undefined): boolean {
+  if (!date) return true // undefined is valid (means no date)
+  const d = typeof date === 'string' ? new Date(date) : date
+  return d instanceof Date && !isNaN(d.getTime())
+}
+
+/**
  * Create a new task
  */
 export async function createTask(
@@ -99,6 +108,11 @@ export async function createTask(
 
   if (!user) {
     throw new Error('User not authenticated')
+  }
+
+  // Validate dueDate if provided
+  if (dueDate !== undefined && !isValidDate(dueDate)) {
+    throw new Error('Invalid due date')
   }
 
   // Get max position for the status column
@@ -156,6 +170,11 @@ export async function updateTask(
 ): Promise<Task> {
   console.log('updateTask API called:', { id, updates })
   const supabase = createClient()
+
+  // Validate dueDate if provided
+  if ('dueDate' in updates && updates.dueDate !== undefined && !isValidDate(updates.dueDate)) {
+    throw new Error('Invalid due date')
+  }
 
   // Convert camelCase to snake_case for database fields
   const dbUpdates: Record<string, unknown> = {}
