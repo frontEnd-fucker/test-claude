@@ -4,6 +4,7 @@ export interface TaskSuggestion {
   title: string
   description?: string
   priority: PriorityLevel
+  dueDate?: string // ISO 8601 日期格式 YYYY-MM-DD
 }
 
 export interface DecomposeResult {
@@ -48,18 +49,25 @@ const SYSTEM_PROMPT = `你是一个项目管理专家。用户会描述一个需
 1. 每个任务应该是独立的、可执行的原子工作项
 2. 任务数量控制在 3-8 个之间
 3. 根据任务复杂度和依赖关系为每个任务设置优先级
-4. 只返回 JSON 数组，不要有其他文字
+4. 尝试从用户输入中提取截止日期（dueDate），支持以下格式：
+   - 具体日期：2024-12-31、12月31日、12.31
+   - 相对日期：3天后、下周、本月底
+   - 如果无法确定具体日期，不要设置 dueDate
+5. 只返回 JSON 数组，不要有其他文字
 
 请返回以下格式的 JSON：
 [
   {
     "title": "任务标题（简洁明了）",
     "description": "任务详细描述（可选）",
-    "priority": "high/medium/low"
+    "priority": "high/medium/low",
+    "dueDate": "2024-12-31" // 可选，ISO 8601 格式 YYYY-MM-DD
   }
 ]
 
-注意：priority 只能是 high、medium 或 low 三个值之一。`
+注意：
+- priority 只能是 high、medium 或 low 三个值之一
+- dueDate 必须是 YYYY-MM-DD 格式，如果无法确定则不返回此字段`
 
 export async function decomposeTask(userInput: string): Promise<DecomposeResult> {
   const apiKey = process.env.DEEPSEEK_API_KEY
@@ -123,6 +131,7 @@ export async function decomposeTask(userInput: string): Promise<DecomposeResult>
       priority: ['high', 'medium', 'low'].includes(task.priority || '')
         ? task.priority as PriorityLevel
         : 'medium',
+      dueDate: task.dueDate || undefined,
     }))
 
     return {

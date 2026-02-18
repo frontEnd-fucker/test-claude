@@ -3,10 +3,10 @@
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Badge } from '@/components/ui/badge'
 import { X, Plus, Trash2, GripVertical } from 'lucide-react'
 import { useCreateTasksBatch } from '@/lib/queries/tasks/useTaskMutations'
-import { TaskSuggestion } from '@/lib/ai/miniMax'
+import { TaskSuggestion } from '@/lib/ai/deepseek'
+import { PriorityLevel } from '@/types'
 import { cn } from '@/lib/utils'
 
 interface AITaskPreviewProps {
@@ -31,7 +31,7 @@ export function AITaskPreview({
   const [isAdding, setIsAdding] = useState(false)
   const createTasksBatch = useCreateTasksBatch()
 
-  const updateTask = (id: string, field: keyof TaskSuggestion, value: string) => {
+  const updateTask = (id: string, field: keyof TaskSuggestion, value: string | undefined) => {
     setEditedTasks((prev) =>
       prev.map((task) =>
         task.id === id ? { ...task, [field]: value } : task
@@ -54,6 +54,7 @@ export function AITaskPreview({
           title: task.title,
           description: task.description,
           priority: task.priority,
+          dueDate: task.dueDate || null,
           status: 'todo',
           projectId,
         }))
@@ -110,13 +111,30 @@ export function AITaskPreview({
                   placeholder="任务描述（可选）"
                   className="text-sm"
                 />
+                <div className="flex items-center gap-2">
+                  <input
+                    type="date"
+                    value={task.dueDate || ''}
+                    onChange={(e) => updateTask(task.id, 'dueDate', e.target.value || undefined)}
+                    className="text-xs border rounded-md px-2 py-1 bg-background"
+                  />
+                  {task.dueDate && (
+                    <button
+                      type="button"
+                      onClick={() => updateTask(task.id, 'dueDate', undefined)}
+                      className="text-xs text-muted-foreground hover:text-destructive"
+                    >
+                      清除
+                    </button>
+                  )}
+                </div>
               </div>
 
               <div className="flex flex-col items-end gap-2">
                 <select
                   value={task.priority}
                   onChange={(e) =>
-                    updateTask(task.id, 'priority', e.target.value as any)
+                    updateTask(task.id, 'priority', e.target.value as PriorityLevel)
                   }
                   className={cn(
                     'text-xs rounded-md border px-2 py-1 cursor-pointer',

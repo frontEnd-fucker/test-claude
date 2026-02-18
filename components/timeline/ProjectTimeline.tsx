@@ -444,9 +444,12 @@ export default function ProjectTimeline({ projectId }: ProjectTimelineProps) {
 
     // 添加缓冲期（3天）
     const buffer = 3 * 24 * 60 * 60 * 1000;
+    const now = Date.now();
+
+    // 确保当前时间在显示范围内
     return {
-      minDate: minDate - buffer,
-      maxDate: maxDate + buffer,
+      minDate: Math.min(minDate - buffer, now - buffer),
+      maxDate: Math.max(maxDate + buffer, now + buffer),
     };
   }, [tasks]);
 
