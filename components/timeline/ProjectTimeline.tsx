@@ -240,17 +240,21 @@ export default function ProjectTimeline({ projectId }: ProjectTimelineProps) {
   const totalTasks = tasks.length + noDueDateTasks.length;
 
   // Expand/collapse state with localStorage persistence
-  const [isExpanded, setIsExpanded] = useState(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        const saved = localStorage.getItem('timeline-expanded');
-        return saved === null ? true : saved === 'true'; // 默认展开
-      } catch {
-        return true; // 如果localStorage不可用，默认展开
+  // 初始值固定为 true，服务端和客户端保持一致
+  const [isExpanded, setIsExpanded] = useState(true);
+
+  // 在客户端从 localStorage 恢复状态
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      const saved = localStorage.getItem('timeline-expanded');
+      if (saved !== null) {
+        setIsExpanded(saved === 'true');
       }
+    } catch {
+      // 忽略 localStorage 错误
     }
-    return true;
-  });
+  }, []);
 
   const [ScatterComponent, setScatterComponent] = useState<ScatterComponentType | null>(null);
 

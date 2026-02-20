@@ -1,39 +1,45 @@
-"use client";
-
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 
-import { useProject } from "@/lib/queries/projects";
+import { createClient } from "@/lib/supabase/server-client";
+import { Project } from "@/types/database";
 import ProjectMembers from "@/components/project/ProjectMembers";
-import { MinimalSkeleton } from "@/components/ui/skeleton/index";
 
 interface ProjectHeaderProps {
   projectId: string;
 }
 
-export default function ProjectHeader({ projectId }: ProjectHeaderProps) {
-  const { data: project, isLoading } = useProject(projectId);
+async function getProject(projectId: string): Promise<Project | null> {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
 
-  if (isLoading) {
-    return (
-      <div className="rounded-xl border bg-card p-4 shadow-sm">
-        <div className="flex flex-col gap-3">
-          {/* Breadcrumb skeleton */}
-          <div className="flex items-center text-sm">
-            <MinimalSkeleton className="h-4 w-16" />
-            <ChevronRight className="h-3 w-3 mx-2" />
-            <MinimalSkeleton className="h-4 w-24" />
-          </div>
-          {/* Title skeleton */}
-          <MinimalSkeleton className="h-7 w-48" />
-          {/* Members skeleton */}
-          <div className="mt-4 pt-4 border-t">
-            <MinimalSkeleton className="h-6 w-32" />
-          </div>
-        </div>
-      </div>
-    );
+  if (!user) {
+    return null;
   }
+
+  const { data: project, error } = await supabase
+    .from('projects')
+    .select('*')
+    .eq('id', projectId)
+    .single();
+
+  if (error || !project) {
+    return null;
+  }
+
+  return {
+    id: project.id,
+    name: project.name,
+    description: project.description,
+    userId: project.user_id,
+    createdAt: new Date(project.created_at),
+    updatedAt: new Date(project.updated_at),
+  } as Project;
+}
+
+export default async function ProjectHeader({ projectId }: ProjectHeaderProps) {
+  console.log('[ProjectHeader] Server-side rendering for project:', projectId);
+  const project = await getProject(projectId);
 
   if (!project) {
     return null;
@@ -72,7 +78,7 @@ export default function ProjectHeader({ projectId }: ProjectHeaderProps) {
           )}
         </div>
 
-        {/* Members section */}
+        {/* Members section - Client Component embedded in Server Component */}
         <div className="mt-4 pt-4 border-t">
           <ProjectMembers projectId={projectId} compact />
         </div>

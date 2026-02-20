@@ -34,14 +34,18 @@ const columns: { id: TaskStatus; title: string }[] = [
   { id: "complete", title: "Complete" },
 ];
 
-export default function Board() {
+interface BoardProps {
+  projectId?: string;
+}
+
+export default function Board({ projectId }: BoardProps) {
   const [activeId, setActiveId] = useState<string | null>(null);
 
   // Set up real-time subscriptions
   useTaskSubscriptions();
 
   // Fetch tasks using TanStack Query
-  const { data: tasks = [], isLoading, error, refetch } = useTasks();
+  const { data: tasks = [], isLoading, error, refetch } = useTasks({ projectId });
   const reorderTasksMutation = useReorderTasks();
   const moveTaskBetweenColumnsMutation = useMoveTaskBetweenColumns();
 
@@ -208,6 +212,7 @@ export default function Board() {
         <TaskForm status="todo" />
       </div>
       <DndContext
+        id="kanban-board"
         sensors={sensors}
         collisionDetection={rectIntersection}
         onDragStart={handleDragStart}

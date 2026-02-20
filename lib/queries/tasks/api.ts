@@ -1,11 +1,14 @@
 import { createClient } from '@/lib/supabase/client'
 import { Task, TaskStatus, PriorityLevel, TimelineData, TimelineTask, NoDueDateTask } from '@/types/database'
+import { SupabaseClient } from '@supabase/supabase-js'
 
 /**
  * Fetch tasks for the current user
+ * @param projectId - Optional project ID to filter tasks
+ * @param supabaseClient - Optional Supabase client. If not provided, uses browser client.
  */
-export async function fetchTasks(projectId?: string): Promise<Task[]> {
-  const supabase = createClient()
+export async function fetchTasks(projectId?: string, supabaseClient?: SupabaseClient): Promise<Task[]> {
+  const supabase = supabaseClient ?? createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
   if (!user) {
@@ -466,8 +469,11 @@ export async function createTasksBatch(
 /**
  * Fetch timeline data for the current user
  */
-export async function fetchTimelineData(projectId?: string): Promise<TimelineData> {
-  const tasks = await fetchTasks(projectId);
+export async function fetchTimelineData(
+  projectId?: string,
+  supabaseClient?: SupabaseClient
+): Promise<TimelineData> {
+  const tasks = await fetchTasks(projectId, supabaseClient);
 
   // Separate tasks with and without due dates
   const timelineTasks: TimelineTask[] = [];
