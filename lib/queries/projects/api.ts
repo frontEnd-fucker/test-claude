@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/client'
 import { Project, InsertProject, UpdateProject } from '@/types/database'
+import { SupabaseClient } from '@supabase/supabase-js'
 
 /**
  * Fetch projects for the current user
@@ -162,8 +163,8 @@ export async function deleteProject(id: string): Promise<void> {
 /**
  * Fetch a single project by ID
  */
-export async function fetchProject(id: string): Promise<Project> {
-  const supabase = createClient()
+export async function fetchProject(id: string, supabaseClient?: SupabaseClient): Promise<Project> {
+  const supabase = supabaseClient ?? createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
   if (!user) {

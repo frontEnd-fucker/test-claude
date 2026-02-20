@@ -40,16 +40,24 @@ export default async function ProjectDetailPage({
   });
 
   // Prefetch tasks for hydration
-  await serverQueryClient.prefetchQuery({
-    queryKey: taskKeys.list({ projectId }),
-    queryFn: () => fetchTasks(projectId, supabase),
-  });
+  try {
+    await serverQueryClient.prefetchQuery({
+      queryKey: taskKeys.list({ projectId }),
+      queryFn: () => fetchTasks(projectId, supabase),
+    });
+  } catch (error) {
+    console.error('Failed to prefetch tasks:', error);
+  }
 
   // Prefetch timeline data for hydration
-  await serverQueryClient.prefetchQuery({
-    queryKey: taskKeys.timeline(projectId),
-    queryFn: () => fetchTimelineData(projectId, supabase),
-  });
+  try {
+    await serverQueryClient.prefetchQuery({
+      queryKey: taskKeys.timeline(projectId),
+      queryFn: () => fetchTimelineData(projectId, supabase),
+    });
+  } catch (error) {
+    console.error('Failed to prefetch timeline:', error);
+  }
 
   return (
     <div className="space-y-6">

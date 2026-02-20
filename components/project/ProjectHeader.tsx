@@ -2,39 +2,11 @@ import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 
 import { createClient } from "@/lib/supabase/server-client";
-import { Project } from "@/types/database";
+import { fetchProject } from "@/lib/queries/projects/api";
 import ProjectMembers from "@/components/project/ProjectMembers";
 
 interface ProjectHeaderProps {
   projectId: string;
-}
-
-async function getProject(projectId: string): Promise<Project | null> {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-
-  if (!user) {
-    return null;
-  }
-
-  const { data: project, error } = await supabase
-    .from('projects')
-    .select('*')
-    .eq('id', projectId)
-    .single();
-
-  if (error || !project) {
-    return null;
-  }
-
-  return {
-    id: project.id,
-    name: project.name,
-    description: project.description,
-    userId: project.user_id,
-    createdAt: new Date(project.created_at),
-    updatedAt: new Date(project.updated_at),
-  } as Project;
 }
 
 export function ProjectHeaderSkeleton() {
@@ -56,7 +28,13 @@ export function ProjectHeaderSkeleton() {
 }
 
 export default async function ProjectHeader({ projectId }: ProjectHeaderProps) {
-  const project = await getProject(projectId);
+  const supabase = await createClient();
+  let project = null;
+  try {
+    project = await fetchProject(projectId, supabase);
+  } catch (error) {
+    console.error('Failed to fetch project:', error);
+  }
 
   if (!project) {
     return null;
