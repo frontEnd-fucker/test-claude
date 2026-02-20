@@ -1,38 +1,39 @@
-"use client";
-
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 
-import { useProject } from "@/lib/queries/projects";
+import { createClient } from "@/lib/supabase/server-client";
+import { fetchProject } from "@/lib/queries/projects/api";
 import ProjectMembers from "@/components/project/ProjectMembers";
-import { MinimalSkeleton } from "@/components/ui/skeleton/index";
 
 interface ProjectHeaderProps {
   projectId: string;
 }
 
-export default function ProjectHeader({ projectId }: ProjectHeaderProps) {
-  const { data: project, isLoading } = useProject(projectId);
-
-  if (isLoading) {
-    return (
-      <div className="rounded-xl border bg-card p-4 shadow-sm">
-        <div className="flex flex-col gap-3">
-          {/* Breadcrumb skeleton */}
-          <div className="flex items-center text-sm">
-            <MinimalSkeleton className="h-4 w-16" />
-            <ChevronRight className="h-3 w-3 mx-2" />
-            <MinimalSkeleton className="h-4 w-24" />
-          </div>
-          {/* Title skeleton */}
-          <MinimalSkeleton className="h-7 w-48" />
-          {/* Members skeleton */}
-          <div className="mt-4 pt-4 border-t">
-            <MinimalSkeleton className="h-6 w-32" />
-          </div>
+export function ProjectHeaderSkeleton() {
+  return (
+    <div className="rounded-xl border bg-card p-4 shadow-sm">
+      <div className="flex flex-col gap-3">
+        <div className="flex items-center text-sm">
+          <div className="h-4 w-16 bg-muted rounded animate-pulse" />
+          <div className="h-3 w-3 mx-2" />
+          <div className="h-4 w-24 bg-muted rounded animate-pulse" />
+        </div>
+        <div className="h-7 w-48 bg-muted rounded animate-pulse" />
+        <div className="mt-4 pt-4 border-t">
+          <div className="h-6 w-32 bg-muted rounded animate-pulse" />
         </div>
       </div>
-    );
+    </div>
+  );
+}
+
+export default async function ProjectHeader({ projectId }: ProjectHeaderProps) {
+  const supabase = await createClient();
+  let project = null;
+  try {
+    project = await fetchProject(projectId, supabase);
+  } catch (error) {
+    console.error('Failed to fetch project:', error);
   }
 
   if (!project) {
@@ -72,7 +73,7 @@ export default function ProjectHeader({ projectId }: ProjectHeaderProps) {
           )}
         </div>
 
-        {/* Members section */}
+        {/* Members section - Client Component embedded in Server Component */}
         <div className="mt-4 pt-4 border-t">
           <ProjectMembers projectId={projectId} compact />
         </div>

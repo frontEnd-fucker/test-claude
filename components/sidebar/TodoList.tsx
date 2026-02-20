@@ -8,6 +8,19 @@ import { Input } from '@/components/ui/input'
 import { Plus, Trash2, Loader2, AlertCircle } from 'lucide-react'
 import { ListSkeleton, MinimalSkeleton } from '@/components/ui/skeleton/index'
 
+export function TodoListSkeleton() {
+  return (
+    <div className="rounded-xl border bg-card p-4 shadow-sm">
+      <div className="h-6 w-24 bg-muted rounded animate-pulse mb-4" />
+      <div className="space-y-2">
+        <div className="h-8 bg-muted rounded animate-pulse" />
+        <div className="h-8 bg-muted rounded animate-pulse" />
+        <div className="h-8 bg-muted rounded animate-pulse" />
+      </div>
+    </div>
+  );
+}
+
 export default function TodoList() {
   const [newTodo, setNewTodo] = useState('')
 

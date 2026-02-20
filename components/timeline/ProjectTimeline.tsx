@@ -223,6 +223,18 @@ const getStatusLabel = (status: 'todo' | 'in-progress' | 'complete'): string =>
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type ScatterComponentType = React.ElementType<any>;
 
+export function ProjectTimelineSkeleton() {
+  return (
+    <div className="rounded-xl border bg-card p-4 shadow-sm">
+      <div className="h-6 w-32 bg-muted rounded animate-pulse mb-4" />
+      <div className="space-y-3">
+        <div className="h-4 w-full bg-muted rounded animate-pulse" />
+        <div className="h-4 w-3/4 bg-muted rounded animate-pulse" />
+      </div>
+    </div>
+  );
+}
+
 export default function ProjectTimeline({ projectId }: ProjectTimelineProps) {
   const [isChartReady, setIsChartReady] = useState(false);
   const [hoveredPoint, setHoveredPoint] = useState<TimelinePoint | null>(null);
@@ -240,17 +252,21 @@ export default function ProjectTimeline({ projectId }: ProjectTimelineProps) {
   const totalTasks = tasks.length + noDueDateTasks.length;
 
   // Expand/collapse state with localStorage persistence
-  const [isExpanded, setIsExpanded] = useState(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        const saved = localStorage.getItem('timeline-expanded');
-        return saved === null ? true : saved === 'true'; // 默认展开
-      } catch {
-        return true; // 如果localStorage不可用，默认展开
+  // 初始值固定为 true，服务端和客户端保持一致
+  const [isExpanded, setIsExpanded] = useState(true);
+
+  // 在客户端从 localStorage 恢复状态
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      const saved = localStorage.getItem('timeline-expanded');
+      if (saved !== null) {
+        setIsExpanded(saved === 'true');
       }
+    } catch {
+      // 忽略 localStorage 错误
     }
-    return true;
-  });
+  }, []);
 
   const [ScatterComponent, setScatterComponent] = useState<ScatterComponentType | null>(null);
 

@@ -34,14 +34,35 @@ const columns: { id: TaskStatus; title: string }[] = [
   { id: "complete", title: "Complete" },
 ];
 
-export default function Board() {
+interface BoardProps {
+  projectId?: string;
+}
+
+export function KanbanBoardSkeleton() {
+  return (
+    <div className="rounded-xl border bg-card p-6 shadow-sm">
+      <div className="h-8 w-48 bg-muted rounded animate-pulse mb-6" />
+      <div className="grid grid-cols-3 gap-4">
+        {[1, 2, 3].map((i) => (
+          <div key={i} className="space-y-3">
+            <div className="h-6 w-24 bg-muted rounded animate-pulse" />
+            <div className="h-20 bg-muted rounded animate-pulse" />
+            <div className="h-20 bg-muted rounded animate-pulse" />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+export default function Board({ projectId }: BoardProps) {
   const [activeId, setActiveId] = useState<string | null>(null);
 
   // Set up real-time subscriptions
   useTaskSubscriptions();
 
   // Fetch tasks using TanStack Query
-  const { data: tasks = [], isLoading, error, refetch } = useTasks();
+  const { data: tasks = [], isLoading, error, refetch } = useTasks({ projectId });
   const reorderTasksMutation = useReorderTasks();
   const moveTaskBetweenColumnsMutation = useMoveTaskBetweenColumns();
 
@@ -208,6 +229,7 @@ export default function Board() {
         <TaskForm status="todo" />
       </div>
       <DndContext
+        id="kanban-board"
         sensors={sensors}
         collisionDetection={rectIntersection}
         onDragStart={handleDragStart}
