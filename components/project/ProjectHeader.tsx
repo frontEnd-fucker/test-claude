@@ -37,8 +37,25 @@ async function getProject(projectId: string): Promise<Project | null> {
   } as Project;
 }
 
+export function ProjectHeaderSkeleton() {
+  return (
+    <div className="rounded-xl border bg-card p-4 shadow-sm">
+      <div className="flex flex-col gap-3">
+        <div className="flex items-center text-sm">
+          <div className="h-4 w-16 bg-muted rounded animate-pulse" />
+          <div className="h-3 w-3 mx-2" />
+          <div className="h-4 w-24 bg-muted rounded animate-pulse" />
+        </div>
+        <div className="h-7 w-48 bg-muted rounded animate-pulse" />
+        <div className="mt-4 pt-4 border-t">
+          <div className="h-6 w-32 bg-muted rounded animate-pulse" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default async function ProjectHeader({ projectId }: ProjectHeaderProps) {
-  console.log('[ProjectHeader] Server-side rendering for project:', projectId);
   const project = await getProject(projectId);
 
   if (!project) {

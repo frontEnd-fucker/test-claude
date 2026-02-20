@@ -198,6 +198,15 @@ function NotesEditorContent() {
   )
 }
 
+export function NotesEditorSkeleton() {
+  return (
+    <div className="rounded-xl border bg-card p-4 shadow-sm">
+      <div className="h-6 w-16 bg-muted rounded animate-pulse mb-4" />
+      <div className="h-32 bg-muted rounded animate-pulse" />
+    </div>
+  );
+}
+
 export default function NotesEditor() {
   const { activeNoteId } = useNotesStore()
 

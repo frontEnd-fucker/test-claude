@@ -6,96 +6,12 @@ import { dehydrate, HydrationBoundary, QueryClient } from "@tanstack/react-query
 import { fetchTasks, fetchTimelineData } from "@/lib/queries/tasks/api";
 import { taskKeys } from "@/lib/queries/tasks/query-keys";
 
-import KanbanBoard from "@/components/kanban/Board";
-import TodoList from "@/components/sidebar/TodoList";
-import NotesEditor from "@/components/notes/NotesEditor";
-import { AITaskInput } from "@/components/ai";
-import ProjectTimeline from "@/components/timeline/ProjectTimeline";
-import ProjectHeader from "@/components/project/ProjectHeader";
-
-// Minimal skeleton for ProjectHeader fallback
-function ProjectHeaderSkeleton() {
-  return (
-    <div className="rounded-xl border bg-card p-4 shadow-sm">
-      <div className="flex flex-col gap-3">
-        <div className="flex items-center text-sm">
-          <div className="h-4 w-16 bg-muted rounded animate-pulse" />
-          <div className="h-3 w-3 mx-2" />
-          <div className="h-4 w-24 bg-muted rounded animate-pulse" />
-        </div>
-        <div className="h-7 w-48 bg-muted rounded animate-pulse" />
-        <div className="mt-4 pt-4 border-t">
-          <div className="h-6 w-32 bg-muted rounded animate-pulse" />
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// Minimal skeleton for ProjectTimeline fallback
-function ProjectTimelineSkeleton() {
-  return (
-    <div className="rounded-xl border bg-card p-4 shadow-sm">
-      <div className="h-6 w-32 bg-muted rounded animate-pulse mb-4" />
-      <div className="space-y-3">
-        <div className="h-4 w-full bg-muted rounded animate-pulse" />
-        <div className="h-4 w-3/4 bg-muted rounded animate-pulse" />
-      </div>
-    </div>
-  );
-}
-
-// Minimal skeleton for KanbanBoard fallback
-function KanbanBoardSkeleton() {
-  return (
-    <div className="rounded-xl border bg-card p-6 shadow-sm">
-      <div className="h-8 w-48 bg-muted rounded animate-pulse mb-6" />
-      <div className="grid grid-cols-3 gap-4">
-        {[1, 2, 3].map((i) => (
-          <div key={i} className="space-y-3">
-            <div className="h-6 w-24 bg-muted rounded animate-pulse" />
-            <div className="h-20 bg-muted rounded animate-pulse" />
-            <div className="h-20 bg-muted rounded animate-pulse" />
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-// Minimal skeleton for TodoList fallback
-function TodoListSkeleton() {
-  return (
-    <div className="rounded-xl border bg-card p-4 shadow-sm">
-      <div className="h-6 w-24 bg-muted rounded animate-pulse mb-4" />
-      <div className="space-y-2">
-        <div className="h-8 bg-muted rounded animate-pulse" />
-        <div className="h-8 bg-muted rounded animate-pulse" />
-        <div className="h-8 bg-muted rounded animate-pulse" />
-      </div>
-    </div>
-  );
-}
-
-// Minimal skeleton for NotesEditor fallback
-function NotesEditorSkeleton() {
-  return (
-    <div className="rounded-xl border bg-card p-4 shadow-sm">
-      <div className="h-6 w-16 bg-muted rounded animate-pulse mb-4" />
-      <div className="h-32 bg-muted rounded animate-pulse" />
-    </div>
-  );
-}
-
-// Minimal skeleton for AITaskInput fallback
-function AITaskInputSkeleton() {
-  return (
-    <div className="rounded-xl border bg-card p-4 shadow-sm">
-      <div className="h-6 w-28 bg-muted rounded animate-pulse mb-4" />
-      <div className="h-10 bg-muted rounded animate-pulse" />
-    </div>
-  );
-}
+import KanbanBoard, { KanbanBoardSkeleton } from "@/components/kanban/Board";
+import TodoList, { TodoListSkeleton } from "@/components/sidebar/TodoList";
+import NotesEditor, { NotesEditorSkeleton } from "@/components/notes/NotesEditor";
+import { AITaskInput, AITaskInputSkeleton } from "@/components/ai";
+import ProjectTimeline, { ProjectTimelineSkeleton } from "@/components/timeline/ProjectTimeline";
+import ProjectHeader, { ProjectHeaderSkeleton } from "@/components/project/ProjectHeader";
 
 // Server Component for project detail page
 export default async function ProjectDetailPage({

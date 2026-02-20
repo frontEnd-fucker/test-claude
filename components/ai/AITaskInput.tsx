@@ -17,6 +17,15 @@ interface AITaskInputProps {
 // Get quota warning threshold from environment variable, default to 5000
 const QUOTA_WARNING_THRESHOLD = parseInt(process.env.NEXT_PUBLIC_AI_QUOTA_WARNING_THRESHOLD || '5000', 10)
 
+export function AITaskInputSkeleton() {
+  return (
+    <div className="rounded-xl border bg-card p-4 shadow-sm">
+      <div className="h-6 w-28 bg-muted rounded animate-pulse mb-4" />
+      <div className="h-10 bg-muted rounded animate-pulse" />
+    </div>
+  );
+}
+
 export function AITaskInput({ projectId }: AITaskInputProps) {
   const [input, setInput] = useState('')
   const [suggestions, setSuggestions] = useState<TaskSuggestion[] | null>(null)
