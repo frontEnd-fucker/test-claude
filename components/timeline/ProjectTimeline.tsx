@@ -702,7 +702,7 @@ export default function ProjectTimeline({ projectId }: ProjectTimelineProps) {
                     </>
                   ) : (
                     <>
-                      <p className="font-medium text-white">{hoveredPoint.title}</p>
+                      <p className="font-medium text-card-foreground">{hoveredPoint.title}</p>
                       <p className="text-sm text-muted-foreground">
                         {formatDate(hoveredPoint.dueDate)}
                       </p>
